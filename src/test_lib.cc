@@ -18,6 +18,7 @@ namespace test{
 	void TEST::show()
 	{
 		cout <<"class name: " << class_name <<endl;
+        cout <<"test git qtcreator" <<endl;
 	}
 
 }
