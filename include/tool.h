@@ -19,11 +19,11 @@ namespace fvv_tool
 		double mR[3][3];
 		double mT[3];
 
-                double mP[4][4]; // mP=[mK*mR mK*mT ]
-                                 //    [ 0      1   ]
-                                 // Z*x=mP*X
+                Matrix4f mP;
+                // mP=[mK*mR mK*mT ]
+                //    [ 0      1   ]
 
-                // maybe this double mP need to be replaced.
+                // Z*x=mP*X
         };
 
 class Tool

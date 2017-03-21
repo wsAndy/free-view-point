@@ -2,7 +2,7 @@
 
 using namespace std;
 using namespace fvv_tool;
-
+using namespace Eigen;
 
 int main(int argc, char ** argv)
 {
