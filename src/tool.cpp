@@ -2,6 +2,7 @@
 
 using namespace std;
 using namespace fvv_tool;
+using namespace cv;
 
 Tool::Tool()
 {
@@ -27,6 +28,7 @@ Tool::~Tool()
 {
     cout << "Tool clean" <<endl;
 }
+
 
 
 void Tool::showParameter()
@@ -58,6 +60,7 @@ void Tool::showParameter()
     }
 
 }
+
 
 /*
 *   load camera calibration parameter, the parameter in the following format:
@@ -122,7 +125,6 @@ void Tool::loadImageParameter(char* file_name)
 }
 
 
-
 /*
 *   use Eigen to calculate P matrix
 *
@@ -154,4 +156,138 @@ void Tool::generateP()
 
         cali[k].mP = eg_P;
     }
+}
+
+
+
+double Tool::getPixelActualDepth(unsigned char d)
+{
+
+/*
+    Mat ac_dep(depth.cols,depth.rows,CV_8UC1); // in this dataset, depth image is saved in 8bits.
+
+    vector<Mat> spl;
+    split(depth,spl);
+
+    Eigen::Matrix<float,Eigen::Dynamic,Eigen::Dynamic> eg_dep,eg_out;
+    cv2eigen(spl[0],eg_dep);
+
+    eg_dep = (eg_dep/255)*(1.0/MinZ - 1.0/MaxZ);
+    // here you also need to operate each element with  +(1/MaxZ) , and get 1/Z
+
+    eigen2cv(eg_out,ac_dep);
+*/
+
+    return 1.0/((d/255.0)*(1.0/MinZ - 1.0/MaxZ) + 1.0/MaxZ);
+}
+
+void Tool::rendering(vector<Mat> &img_set, vector<int> &img_id)
+{
+    // use two image
+
+    Mat left = img_set[0]; // you need depth image.
+    Mat right = img_set[1];
+
+    int left_id = img_id[0];
+    int right_id = img_id[1];
+
+    Mat img_target(left.cols,left.rows,CV_8UC3);
+
+    for(int i = 0; i < img_target.cols; ++i)
+    {
+        for(int j = 0 ; j < img_target.rows; ++j)
+        {
+            // you need to accelarate the following operation
+            // first, get visual view-point image... so , you need to complete function `projFromUVToXYZ` and `projFromXYZToUV`
+            // then , follow the paper.
+//            if(  )
+            ;
+
+        }
+
+    }
+}
+
+
+/**
+ *   here need to accelerate
+ *
+ * project from UV (image coordinate ) to XYZ (3D space)
+ *
+ *
+ * Z_w * x = P * X
+ *      UV       XYZ
+ *
+ *  input: rgb , dep
+ *  output: cd_
+ **/
+
+void Tool::projFromUVToXYZ(Mat &rgb, Mat &dep, int index, pcl::PointCloud<pcl::PointXYZRGB> &cd_)
+{
+    cd_.width = rgb.cols;
+    cd_.height = rgb.rows;
+    cd_.points.resize(cd_.width * cd_.height);
+
+    for(int i = 0; i < cd_.height; ++i)
+    {
+        for(int j = 0; j < cd_.width; ++j)
+        {
+            int zc = dep.at<cv::Vec3b>(i,j)[0];
+            int u = j;
+            int v = i;
+
+            Matrix4d p_in = (cali[index].mP).inverse();
+            Vector4d x_(zc*u,zc*v,zc,1);
+            Vector4d X_;
+            X_ = p_in*x_;
+
+            cd_.points[i*cd_.height+j].x = X_(0);
+            cd_.points[i*cd_.height+j].y = X_(1);
+            cd_.points[i*cd_.height+j].z = X_(2);
+
+            cd_.points[i*cd_.height+j].r = rgb.at<cv::Vec3b>(i,j)[2];
+            cd_.points[i*cd_.height+j].g = rgb.at<cv::Vec3b>(i,j)[1];
+            cd_.points[i*cd_.height+j].b = rgb.at<cv::Vec3b>(i,j)[0];
+
+        }
+
+    }
+
+}
+
+/**
+ *  project from XYZ (3D world coordinate) to UV (image coordinate)
+ *
+ *  input: cd_
+ *  output: rgb, dep
+ */
+
+void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB> &cd_, Mat &rgb, Mat &dep, Eigen::Matrix4d & targetP)
+{
+
+    // here you need to initial rgb and depth first since not all the pixel in these two image will be fixed.
+    // !!!!
+
+    // initial rgb and depth
+    // TODO
+
+    for(int i = 0; i < cd_.height; ++i)
+    {
+        for(int j = 0 ; j < cd_.width; ++j)
+        {
+            Vector4d X_;
+            X_(0) = cd_.points[i*cd_.height+j].x;
+            X_(1) = cd_.points[i*cd_.height+j].y;
+            X_(2) = cd_.points[i*cd_.height+j].z;
+            X_(3) = 1.0;
+
+            double zc = X_(2);
+            Vector4d x_;
+            x_ = targetP*X_;
+
+            // TODO
+
+        }
+    }
+
 }

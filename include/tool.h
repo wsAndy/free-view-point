@@ -7,10 +7,18 @@
 #include "vector"
 #include "string"
 #include "Eigen/Dense"
+#include "opencv2/core.hpp"
+#include "pcl/point_types.h"
+#include "pcl/io/pcd_io.h"
+#include "opencv2/core/eigen.hpp"
 
+using namespace cv;
 using namespace std;
 using namespace Eigen;
 
+
+// this tool is designed to test the paper's algorithm.
+// and it might not work well for video stream since there is no accelerate or multi-thread.
 namespace fvv_tool
 {
 
@@ -41,12 +49,30 @@ public:
     // generate mP
     void generateP();
 
+    // convert depth image's pixel value to an actual one.
+    double getPixelActualDepth(unsigned char d);
+
+    // rendering to novel viewpoint.
+    void rendering(vector<Mat>& img_set,vector<int>& img_id);
+
+
+
+    // infact , I think this two function should be operate in one function.
+    // project from UV to XYZ
+    void projFromUVToXYZ( Mat& rgb, Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZRGB>& cd);
+
+    // project from XYZ to UV, since you need to project the pointcloud to a visual image plane
+    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZRGB>& cd, Mat& rgb, Mat& dep, Matrix4d &targetP);
+
     CalibStruct* cali;
 
 private:
     int camera_num = 8;
     int MaxZ = 120;
     int MinZ = 44;
+
+    pcl::PointCloud<pcl::PointXYZ> cld_map; // this global pointcloud might not be used
+                                            // since you optimite those fusing image in the virtual image plane.
 
 };
 
