@@ -19,7 +19,7 @@ namespace fvv_tool
 		double mR[3][3];
 		double mT[3];
 
-                Matrix4f mP;
+                Matrix4d mP;
                 // mP=[mK*mR mK*mT ]
                 //    [ 0      1   ]
 
@@ -30,6 +30,7 @@ class Tool
 {
 public:
     Tool();
+    Tool(string dataset_name);
     ~Tool();
 
     // operate *cali ;
@@ -44,6 +45,8 @@ public:
 
 private:
     int camera_num = 8;
+    int MaxZ = 120;
+    int MinZ = 44;
 
 };
 

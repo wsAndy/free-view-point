@@ -9,6 +9,20 @@ Tool::Tool()
     cali = new CalibStruct[camera_num];
 }
 
+Tool::Tool(string dataset_name)
+{
+    if( dataset_name.compare("ballet") == 0)
+    {
+        MaxZ = 130;
+        MinZ = 42;
+    }else{
+        MaxZ = 120;
+        MinZ = 44;
+    }
+
+    cali = new CalibStruct[camera_num];
+}
+
 Tool::~Tool()
 {
     cout << "Tool clean" <<endl;
@@ -115,6 +129,29 @@ void Tool::loadImageParameter(char* file_name)
 **/
 void Tool::generateP()
 {
+    for(int k = 0; k < camera_num; ++k)
+    {
 
+        Matrix3d eg_mk, eg_mr;
+        Vector3d eg_mt;
+        for(int i =0; i<3; ++i)
+        {
+            for(int j = 0; j < 3;++j)
+            {
+                eg_mk(i,j) = cali[k].mK[i][j];
+                eg_mr(i,j) = cali[k].mR[i][j];
+            }
+            eg_mt(i) = cali[k].mT[i];
+        }
 
+        Matrix4d eg_P;
+        eg_P.block<3,3>(0,0) = eg_mk*eg_mr;
+        eg_P.block<3,1>(0,3) = eg_mk*eg_mt;
+        eg_P(3,0) = 0.0;
+        eg_P(3,1) = 0.0;
+        eg_P(3,2) = 0.0;
+        eg_P(3,3) = 1.0;
+
+        cali[k].mP = eg_P;
+    }
 }
