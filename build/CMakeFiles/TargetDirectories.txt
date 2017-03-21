@@ -1,0 +1,3 @@
+/home/sheng/free-view-point/build/CMakeFiles/free-view-point.dir
+/home/sheng/free-view-point/build/CMakeFiles/ftv.dir
+/home/sheng/free-view-point/build/CMakeFiles/test.dir
