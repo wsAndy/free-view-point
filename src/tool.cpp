@@ -192,27 +192,31 @@ void Tool::rendering(vector<Mat> &img_set, vector<int> &img_id)
 {
     // use two image
 
-    Mat left = img_set[0]; // you need depth image.
-    Mat right = img_set[1];
+    /**
+     * project left image to virtual image plane
+     * project right image to virtual image plane
+     * fuseing these two depth images and get one.
+     *
+     **/
 
-    int left_id = img_id[0];
-    int right_id = img_id[1];
+    //TODO
 
-    Mat img_target(left.cols,left.rows,CV_8UC3);
+    /**
+     *  you can smooth the depth image here.
+     *
+     */
 
-    for(int i = 0; i < img_target.cols; ++i)
-    {
-        for(int j = 0 ; j < img_target.rows; ++j)
-        {
-            // you need to accelarate the following operation
-            // first, get visual view-point image... so , you need to complete function `projFromUVToXYZ` and `projFromXYZToUV`
-            // then , follow the paper.
-//            if(  )
-            ;
+    // TODO
 
-        }
+    /**
+     *  reproject the pixel on virtual image plane to left image and right image
+     *  get its rgb values
+     *
+     */
 
-    }
+    // TODO
+
+
 }
 
 
