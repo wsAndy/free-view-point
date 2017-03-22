@@ -183,6 +183,11 @@ double Tool::getPixelActualDepth(unsigned char d)
     return 1.0/((d/255.0)*(1.0/MinZ - 1.0/MaxZ) + 1.0/MaxZ);
 }
 
+double Tool::getPixelDepth(double dw)
+{
+    return 255.0*(MaxZ*MinZ)*(1/dw-1/MaxZ)/(MaxZ-MinZ);
+}
+
 void Tool::rendering(vector<Mat> &img_set, vector<int> &img_id)
 {
     // use two image
@@ -234,7 +239,7 @@ void Tool::projFromUVToXYZ(Mat &rgb, Mat &dep, int index, pcl::PointCloud<pcl::P
     {
         for(int j = 0; j < cd_.width; ++j)
         {
-            int zc = dep.at<cv::Vec3b>(i,j)[0];
+            double zc = getPixelActualDepth(dep.at<cv::Vec3b>(i,j)[0]); // actual depth
             int u = j;
             int v = i;
 
@@ -250,7 +255,6 @@ void Tool::projFromUVToXYZ(Mat &rgb, Mat &dep, int index, pcl::PointCloud<pcl::P
             cd_.points[i*cd_.width+j].r = rgb.at<cv::Vec3b>(i,j)[2];
             cd_.points[i*cd_.width+j].g = rgb.at<cv::Vec3b>(i,j)[1];
             cd_.points[i*cd_.width+j].b = rgb.at<cv::Vec3b>(i,j)[0];
-
 
         }
 
@@ -269,7 +273,6 @@ void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB> &cd_, Eigen::Matrix
 {
 
     // here you need to initial rgb and depth first since not all the pixel in these two image will be fixed.
-    // !!!!
 
     if(targetP.cols()!=4 || targetP.rows()!=4)
     {
@@ -281,10 +284,6 @@ void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB> &cd_, Eigen::Matrix
         rgb = Mat::zeros(cd_.height,cd_.width,CV_8UC3);
         dep = Mat::zeros(cd_.height,cd_.width,CV_8UC1);
 
-//        imshow("rgb",rgb);
-//        imshow("dep",dep);
-//        waitKey(0);
-
         for(int i = 0; i < cd_.height; ++i)
         {
             for(int j = 0 ; j < cd_.width; ++j)
@@ -292,18 +291,25 @@ void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB> &cd_, Eigen::Matrix
                 Vector4d X_;
                 X_(0) = cd_.points[i*cd_.width+j].x;
                 X_(1) = cd_.points[i*cd_.width+j].y;
-                X_(2) = cd_.points[i*cd_.width+j].z;
+                X_(2) = cd_.points[i*cd_.width+j].z; // actual depth
                 X_(3) = 1.0;
 
                 double zc = X_(2);
                 Vector4d x_;
                 x_ = targetP*X_;
 
-                // TODO
+                if(zc < 0.2) // important in test.
+                {
+                    continue;
+                }
 
+                rgb.at<cv::Vec3b>(int(x_(1)/zc),int(x_(0)/zc))[0] = cd_.points[i*cd_.width+j].b;
+                rgb.at<cv::Vec3b>(int(x_(1)/zc),int(x_(0)/zc))[1] = cd_.points[i*cd_.width+j].g;
+                rgb.at<cv::Vec3b>(int(x_(1)/zc),int(x_(0)/zc))[2] = cd_.points[i*cd_.width+j].r;
+
+                dep.at<uchar>(int(x_(1)/zc),int(x_(0)/zc)) = getPixelDepth(zc);
             }
         }
-
     }
 
 }

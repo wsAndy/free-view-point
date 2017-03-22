@@ -3,60 +3,6 @@
 
 CMakeFiles/ftv.dir/Examples/vgftv/main.cpp.o
  ../include/tool.h
- /home/sheng/anaconda2/include/opencv/cxcore.h
- /home/sheng/anaconda2/include/opencv2/calib3d.hpp
- /home/sheng/anaconda2/include/opencv2/calib3d/calib3d_c.h
- /home/sheng/anaconda2/include/opencv2/core.hpp
- /home/sheng/anaconda2/include/opencv2/core/affine.hpp
- /home/sheng/anaconda2/include/opencv2/core/base.hpp
- /home/sheng/anaconda2/include/opencv2/core/bufferpool.hpp
- /home/sheng/anaconda2/include/opencv2/core/core_c.h
- /home/sheng/anaconda2/include/opencv2/core/cvdef.h
- /home/sheng/anaconda2/include/opencv2/core/cvstd.hpp
- /home/sheng/anaconda2/include/opencv2/core/cvstd.inl.hpp
- /home/sheng/anaconda2/include/opencv2/core/eigen.hpp
- /home/sheng/anaconda2/include/opencv2/core/fast_math.hpp
- /home/sheng/anaconda2/include/opencv2/core/hal/interface.h
- /home/sheng/anaconda2/include/opencv2/core/mat.hpp
- /home/sheng/anaconda2/include/opencv2/core/mat.inl.hpp
- /home/sheng/anaconda2/include/opencv2/core/matx.hpp
- /home/sheng/anaconda2/include/opencv2/core/neon_utils.hpp
- /home/sheng/anaconda2/include/opencv2/core/operations.hpp
- /home/sheng/anaconda2/include/opencv2/core/optim.hpp
- /home/sheng/anaconda2/include/opencv2/core/persistence.hpp
- /home/sheng/anaconda2/include/opencv2/core/ptr.inl.hpp
- /home/sheng/anaconda2/include/opencv2/core/saturate.hpp
- /home/sheng/anaconda2/include/opencv2/core/traits.hpp
- /home/sheng/anaconda2/include/opencv2/core/types.hpp
- /home/sheng/anaconda2/include/opencv2/core/types_c.h
- /home/sheng/anaconda2/include/opencv2/core/utility.hpp
- /home/sheng/anaconda2/include/opencv2/core/version.hpp
- /home/sheng/anaconda2/include/opencv2/features2d.hpp
- /home/sheng/anaconda2/include/opencv2/flann/config.h
- /home/sheng/anaconda2/include/opencv2/flann/defines.h
- /home/sheng/anaconda2/include/opencv2/flann/miniflann.hpp
- /home/sheng/anaconda2/include/opencv2/highgui.hpp
- /home/sheng/anaconda2/include/opencv2/highgui/highgui_c.h
- /home/sheng/anaconda2/include/opencv2/imgcodecs.hpp
- /home/sheng/anaconda2/include/opencv2/imgcodecs/imgcodecs_c.h
- /home/sheng/anaconda2/include/opencv2/imgproc.hpp
- /home/sheng/anaconda2/include/opencv2/imgproc/imgproc_c.h
- /home/sheng/anaconda2/include/opencv2/imgproc/types_c.h
- /home/sheng/anaconda2/include/opencv2/ml.hpp
- /home/sheng/anaconda2/include/opencv2/objdetect.hpp
- /home/sheng/anaconda2/include/opencv2/objdetect/detection_based_tracker.hpp
- /home/sheng/anaconda2/include/opencv2/objdetect/objdetect_c.h
- /home/sheng/anaconda2/include/opencv2/opencv.hpp
- /home/sheng/anaconda2/include/opencv2/photo.hpp
- /home/sheng/anaconda2/include/opencv2/photo/photo_c.h
- /home/sheng/anaconda2/include/opencv2/video.hpp
- /home/sheng/anaconda2/include/opencv2/video/background_segm.hpp
- /home/sheng/anaconda2/include/opencv2/video/tracking.hpp
- /home/sheng/anaconda2/include/opencv2/video/tracking_c.h
- /home/sheng/anaconda2/include/opencv2/videoio.hpp
- /home/sheng/anaconda2/include/opencv2/videoio/videoio_c.h
- /home/sheng/anaconda2/include/opencv2/xfeatures2d.hpp
- /home/sheng/anaconda2/include/opencv2/xfeatures2d/nonfree.hpp
  /home/sheng/free-view-point/Examples/vgftv/main.cpp
  /usr/include/eigen3/Eigen/Cholesky
  /usr/include/eigen3/Eigen/Core
@@ -263,6 +209,36 @@ CMakeFiles/ftv.dir/Examples/vgftv/main.cpp.o
  /usr/include/eigen3/Eigen/src/plugins/CommonCwiseUnaryOps.h
  /usr/include/eigen3/Eigen/src/plugins/MatrixCwiseBinaryOps.h
  /usr/include/eigen3/Eigen/src/plugins/MatrixCwiseUnaryOps.h
+ /usr/local/include/opencv2/calib3d/calib3d.hpp
+ /usr/local/include/opencv2/contrib/contrib.hpp
+ /usr/local/include/opencv2/contrib/openfabmap.hpp
+ /usr/local/include/opencv2/contrib/retina.hpp
+ /usr/local/include/opencv2/core/affine.hpp
+ /usr/local/include/opencv2/core/core.hpp
+ /usr/local/include/opencv2/core/core_c.h
+ /usr/local/include/opencv2/core/eigen.hpp
+ /usr/local/include/opencv2/core/mat.hpp
+ /usr/local/include/opencv2/core/operations.hpp
+ /usr/local/include/opencv2/core/types_c.h
+ /usr/local/include/opencv2/core/version.hpp
+ /usr/local/include/opencv2/features2d/features2d.hpp
+ /usr/local/include/opencv2/flann/config.h
+ /usr/local/include/opencv2/flann/defines.h
+ /usr/local/include/opencv2/flann/miniflann.hpp
+ /usr/local/include/opencv2/highgui/highgui.hpp
+ /usr/local/include/opencv2/highgui/highgui_c.h
+ /usr/local/include/opencv2/imgproc/imgproc.hpp
+ /usr/local/include/opencv2/imgproc/imgproc_c.h
+ /usr/local/include/opencv2/imgproc/types_c.h
+ /usr/local/include/opencv2/ml/ml.hpp
+ /usr/local/include/opencv2/objdetect/objdetect.hpp
+ /usr/local/include/opencv2/opencv.hpp
+ /usr/local/include/opencv2/opencv_modules.hpp
+ /usr/local/include/opencv2/photo/photo.hpp
+ /usr/local/include/opencv2/photo/photo_c.h
+ /usr/local/include/opencv2/video/background_segm.hpp
+ /usr/local/include/opencv2/video/tracking.hpp
+ /usr/local/include/opencv2/video/video.hpp
  /usr/local/include/pcl-1.8/pcl/PCLHeader.h
  /usr/local/include/pcl-1.8/pcl/PCLImage.h
  /usr/local/include/pcl-1.8/pcl/PCLPointCloud2.h

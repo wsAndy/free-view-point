@@ -32,14 +32,14 @@ SET(CMAKE_TARGET_LINKED_INFO_FILES
 
 # The include file search paths:
 SET(CMAKE_C_TARGET_INCLUDE_PATH
+  "/usr/local/include/opencv"
+  "/usr/local/include"
   "/usr/include/vtk-5.8"
   ".."
   "../include"
   "/usr/include/eigen3"
   "/usr/local/include/pcl-1.8"
   "/usr/include/ni"
-  "/home/sheng/anaconda2/include/opencv"
-  "/home/sheng/anaconda2/include"
   )
 SET(CMAKE_CXX_TARGET_INCLUDE_PATH ${CMAKE_C_TARGET_INCLUDE_PATH})
 SET(CMAKE_Fortran_TARGET_INCLUDE_PATH ${CMAKE_C_TARGET_INCLUDE_PATH})

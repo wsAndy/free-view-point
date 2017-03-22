@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(free-view-point)
 
-find_package(OpenCV REQUIRED)
+find_package(OpenCV 2.4.13 REQUIRED)
 find_Package(Eigen3 REQUIRED)
 find_package(PCL REQUIRED)
 

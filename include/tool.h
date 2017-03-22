@@ -52,6 +52,9 @@ public:
     // convert depth image's pixel value to an actual one.
     double getPixelActualDepth(unsigned char d);
 
+    // convert depth to image pixel.
+    double getPixelDepth(double dw);
+
     // rendering to novel viewpoint.
     void rendering(vector<Mat>& img_set,vector<int>& img_id);
 

@@ -1,10 +1,12 @@
 #include "tool.h"
 
 using namespace std;
+using namespace cv;
 using namespace fvv_tool;
 using namespace Eigen;
 
 
+void test(Tool& );
 
 int main(int argc, char ** argv)
 {
@@ -13,11 +15,11 @@ int main(int argc, char ** argv)
 
 //    tool.showParameter();
 
-    tool.generateP();
-
-//    cout << tool.cali[0].mP <<endl;
+    tool.generateP(); // after loadImageParameter, generate each image's P according to reference camera 4
 
     // now each tool.cali[] has mP, cali[4]
+
+    test(tool);
 
     /**
      * depth image operation, post-filtering
@@ -26,8 +28,21 @@ int main(int argc, char ** argv)
      *
      * **/
 
-    Mat rgb(100,200,CV_8UC3,Scalar(0));
-    Mat depth(100,200,CV_8UC1,Scalar(0));
+    /**
+     *  project the nearest image to viewpoint
+     *
+     *  TODO
+     * */
+
+
+
+
+    return 0;
+}
+
+
+void test(Tool& tool)
+{
     Matrix4d P;
     for(int i = 0;i <4;++i)
     {
@@ -37,8 +52,8 @@ int main(int argc, char ** argv)
         }
     }
     pcl::PointCloud<pcl::PointXYZRGB> cd;
-    cd.width = 100;
-    cd.height = 200;
+    cd.width = 200;
+    cd.height = 100;
     cd.resize(cd.width * cd.height);
 
     for(int i = 0 ; i < cd.height; ++i)
@@ -51,28 +66,14 @@ int main(int argc, char ** argv)
         }
     }
 
-//    tool.projFromXYZToUV(cd,P,rgb,depth);
+    Mat rgb;
+    Mat depth;
 
-//    rgb = Mat::ones(cd.height,cd.width,CV_8UC3);
-//    depth = Mat::ones(cd.height,cd.width,CV_8UC1);
+    tool.projFromXYZToUV(cd,P,rgb,depth);
 
-    for(int i = 0; i < 5;i++)
-    {
-        for(int j = 10; j < 20;++j)
-        {
-            cout << "out " << rgb.at<cv::Vec3b>(i,j)[0]<<endl;
-        }
-    }
-    cout << "out" <<endl << depth.at<uchar>(1,1) <<endl;
+    imshow("rgb",rgb);
+    imshow("depth",depth);
 
-    /**
-     *  project the nearest image to viewpoint
-     *
-     *  TODO
-     * */
+    waitKey(0);
 
-
-
-
-    return 0;
 }
