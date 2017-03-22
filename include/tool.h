@@ -22,7 +22,7 @@ using namespace Eigen;
 namespace fvv_tool
 {
 
-        struct CalibStruct{
+        struct ImageFrame{
 		double mK[3][3];
 		double mR[3][3];
 		double mT[3];
@@ -32,6 +32,9 @@ namespace fvv_tool
                 //    [ 0      1   ]
 
                 // Z*x=mP*X
+
+                Mat rgb;
+                Mat dep;
         };
 
 class Tool
@@ -56,18 +59,27 @@ public:
     double getPixelDepth(double dw);
 
     // rendering to novel viewpoint.
-    void rendering(vector<Mat>& img_set,vector<int>& img_id);
+    void rendering(vector<int>& img_id, Matrix4d& targetP);
 
+    // my god, in this paper, when we project depth or rgb image to a virtual image plane, rgb and depth
+    // is uncorrelation  !!!!
 
+    // maybe I should not use pcl and define a struct directly...
 
     // infact , I think this two function should be operate in one function.
     // project from UV to XYZ
     void projFromUVToXYZ( Mat& rgb, Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZRGB>& cd);
 
+    void projFromUVToXYZ( Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZ>& cd);
+
     // project from XYZ to UV, since you need to project the pointcloud to a visual image plane
     void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZRGB>& cd, Matrix4d &targetP, Mat& rgb, Mat& dep);
 
-    CalibStruct* cali;
+    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZ>& cd, Matrix4d &targetP, Mat& dep);
+
+
+
+    ImageFrame* cali;
 
 private:
     int camera_num = 8;

@@ -7,7 +7,7 @@ using namespace cv;
 Tool::Tool()
 {
     cout << "Tool init." <<endl;
-    cali = new CalibStruct[camera_num];
+    cali = new ImageFrame[camera_num];
 }
 
 Tool::Tool(string dataset_name)
@@ -21,7 +21,7 @@ Tool::Tool(string dataset_name)
         MinZ = 44;
     }
 
-    cali = new CalibStruct[camera_num];
+    cali = new ImageFrame[camera_num];
 }
 
 Tool::~Tool()
@@ -161,7 +161,6 @@ void Tool::generateP()
 }
 
 
-
 double Tool::getPixelActualDepth(unsigned char d)
 {
 
@@ -188,16 +187,28 @@ double Tool::getPixelDepth(double dw)
     return 255.0*(MaxZ*MinZ)*(1/dw-1/MaxZ)/(MaxZ-MinZ);
 }
 
-void Tool::rendering(vector<Mat> &img_set, vector<int> &img_id)
+void Tool::rendering(vector<int> &img_id, Matrix4d& targetP)
 {
     // use two image
 
+    Mat left_d = cali[img_id[0]].depth;
+    Mat right_d = cali[img_id[1]].depth;
+
+    Mat left_r = cali[img_id[0]].rgb;
+    Mat right_r = cali[img_id[1]].rgb;
+
+    Matrix4d left_P = cali[img_id[0]].mP;
+    Matrix4d right_P = cali[img_id[1]].mP;
+
     /**
-     * project left image to virtual image plane
-     * project right image to virtual image plane
+     * project left depth image to virtual image plane
+     * project right depth image to virtual image plane
      * fuseing these two depth images and get one.
      *
      **/
+
+    projFromUVToXYZ(left_d,);
+
 
     //TODO
 
@@ -266,6 +277,45 @@ void Tool::projFromUVToXYZ(Mat &rgb, Mat &dep, int index, pcl::PointCloud<pcl::P
 
 }
 
+
+/**
+ *   here need to accelerate
+ *
+ * project from UV (image coordinate ) to XYZ (3D space)
+ *
+ *  only project depth
+ *
+ **/
+
+void Tool::projFromUVToXYZ( Mat &dep, int index, pcl::PointCloud<pcl::PointXYZ> &cd_)
+{
+    cd_.width = dep.cols;
+    cd_.height = dep.rows;
+    cd_.points.resize(cd_.width * cd_.height);
+
+    for(int i = 0; i < cd_.height; ++i)
+    {
+        for(int j = 0; j < cd_.width; ++j)
+        {
+            double zc = getPixelActualDepth(dep.at<cv::Vec3b>(i,j)[0]); // actual depth
+            int u = j;
+            int v = i;
+
+            Matrix4d p_in = (cali[index].mP).inverse();
+            Vector4d x_(zc*u,zc*v,zc,1);
+            Vector4d X_;
+            X_ = p_in*x_;
+
+            cd_.points[i*cd_.width+j].x = X_(0);
+            cd_.points[i*cd_.width+j].y = X_(1);
+            cd_.points[i*cd_.width+j].z = X_(2);
+
+        }
+
+    }
+
+}
+
 /**
  *  project from XYZ (3D world coordinate) to UV (image coordinate)
  *
@@ -310,6 +360,57 @@ void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB> &cd_, Eigen::Matrix
                 rgb.at<cv::Vec3b>(int(x_(1)/zc),int(x_(0)/zc))[0] = cd_.points[i*cd_.width+j].b;
                 rgb.at<cv::Vec3b>(int(x_(1)/zc),int(x_(0)/zc))[1] = cd_.points[i*cd_.width+j].g;
                 rgb.at<cv::Vec3b>(int(x_(1)/zc),int(x_(0)/zc))[2] = cd_.points[i*cd_.width+j].r;
+
+                dep.at<uchar>(int(x_(1)/zc),int(x_(0)/zc)) = getPixelDepth(zc);
+            }
+        }
+    }
+
+}
+
+
+
+/**
+ *  project from XYZ (3D world coordinate) to UV (image coordinate)
+ *
+ *  input: cd_
+ *  output: dep
+ *
+ *   only depth image
+ */
+
+void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZ> &cd_, Eigen::Matrix4d & targetP, Mat &dep)
+{
+
+    // here you need to initial rgb and depth first since not all the pixel in these two image will be fixed.
+
+    if(targetP.cols()!=4 || targetP.rows()!=4)
+    {
+        cerr << " targetP is not a [4x4] matrix!" <<endl;
+    }else{
+        // initial depth
+        // TODO
+
+        dep = Mat::zeros(cd_.height,cd_.width,CV_8UC1);
+
+        for(int i = 0; i < cd_.height; ++i)
+        {
+            for(int j = 0 ; j < cd_.width; ++j)
+            {
+                Vector4d X_;
+                X_(0) = cd_.points[i*cd_.width+j].x;
+                X_(1) = cd_.points[i*cd_.width+j].y;
+                X_(2) = cd_.points[i*cd_.width+j].z; // actual depth
+                X_(3) = 1.0;
+
+                double zc = X_(2);
+                Vector4d x_;
+                x_ = targetP*X_;
+
+                if(zc < 0.2) // important in test.
+                {
+                    continue;
+                }
 
                 dep.at<uchar>(int(x_(1)/zc),int(x_(0)/zc)) = getPixelDepth(zc);
             }
