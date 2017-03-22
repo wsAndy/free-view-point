@@ -19,8 +19,8 @@ string
 ../include/string
 Eigen/Dense
 ../include/Eigen/Dense
-opencv2/core.hpp
-../include/opencv2/core.hpp
+opencv2/opencv.hpp
+../include/opencv2/opencv.hpp
 pcl/point_types.h
 ../include/pcl/point_types.h
 pcl/io/pcd_io.h

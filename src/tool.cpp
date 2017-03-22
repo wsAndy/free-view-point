@@ -86,7 +86,7 @@ void Tool::loadImageParameter(char* file_name)
         cerr << "load calibration parameter" <<endl;
 
         int camIdx;
-        float tmp; // dummy
+        double tmp; // dummy
         for(int k = 0; k < camera_num; ++k)
         {
             fscanf(f_read,"%d",&camIdx);
@@ -100,12 +100,13 @@ void Tool::loadImageParameter(char* file_name)
                        &(cali[camIdx].mK[i][2]));
             }
 
-            fscanf(f_read,"%lf",tmp);
-            fscanf(f_read,"%lf",tmp);
+            fscanf(f_read,"%lf",&tmp);
+            fscanf(f_read,"%lf",&tmp);
 
             // camera rotation and transformation
             for (int i = 0; i < 3; ++i)
             {
+
                 for(int j = 0; j < 3; ++j)
                 {
                     fscanf(f_read,"%lf",
@@ -156,6 +157,7 @@ void Tool::generateP()
 
         cali[k].mP = eg_P;
     }
+
 }
 
 
@@ -241,13 +243,14 @@ void Tool::projFromUVToXYZ(Mat &rgb, Mat &dep, int index, pcl::PointCloud<pcl::P
             Vector4d X_;
             X_ = p_in*x_;
 
-            cd_.points[i*cd_.height+j].x = X_(0);
-            cd_.points[i*cd_.height+j].y = X_(1);
-            cd_.points[i*cd_.height+j].z = X_(2);
+            cd_.points[i*cd_.width+j].x = X_(0);
+            cd_.points[i*cd_.width+j].y = X_(1);
+            cd_.points[i*cd_.width+j].z = X_(2);
 
-            cd_.points[i*cd_.height+j].r = rgb.at<cv::Vec3b>(i,j)[2];
-            cd_.points[i*cd_.height+j].g = rgb.at<cv::Vec3b>(i,j)[1];
-            cd_.points[i*cd_.height+j].b = rgb.at<cv::Vec3b>(i,j)[0];
+            cd_.points[i*cd_.width+j].r = rgb.at<cv::Vec3b>(i,j)[2];
+            cd_.points[i*cd_.width+j].g = rgb.at<cv::Vec3b>(i,j)[1];
+            cd_.points[i*cd_.width+j].b = rgb.at<cv::Vec3b>(i,j)[0];
+
 
         }
 
@@ -262,32 +265,45 @@ void Tool::projFromUVToXYZ(Mat &rgb, Mat &dep, int index, pcl::PointCloud<pcl::P
  *  output: rgb, dep
  */
 
-void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB> &cd_, Mat &rgb, Mat &dep, Eigen::Matrix4d & targetP)
+void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB> &cd_, Eigen::Matrix4d & targetP, Mat &rgb, Mat &dep)
 {
 
     // here you need to initial rgb and depth first since not all the pixel in these two image will be fixed.
     // !!!!
 
-    // initial rgb and depth
-    // TODO
-
-    for(int i = 0; i < cd_.height; ++i)
+    if(targetP.cols()!=4 || targetP.rows()!=4)
     {
-        for(int j = 0 ; j < cd_.width; ++j)
+        cerr << " targetP is not a [4x4] matrix!" <<endl;
+    }else{
+        // initial rgb and depth
+        // TODO
+
+        rgb = Mat::zeros(cd_.height,cd_.width,CV_8UC3);
+        dep = Mat::zeros(cd_.height,cd_.width,CV_8UC1);
+
+//        imshow("rgb",rgb);
+//        imshow("dep",dep);
+//        waitKey(0);
+
+        for(int i = 0; i < cd_.height; ++i)
         {
-            Vector4d X_;
-            X_(0) = cd_.points[i*cd_.height+j].x;
-            X_(1) = cd_.points[i*cd_.height+j].y;
-            X_(2) = cd_.points[i*cd_.height+j].z;
-            X_(3) = 1.0;
+            for(int j = 0 ; j < cd_.width; ++j)
+            {
+                Vector4d X_;
+                X_(0) = cd_.points[i*cd_.width+j].x;
+                X_(1) = cd_.points[i*cd_.width+j].y;
+                X_(2) = cd_.points[i*cd_.width+j].z;
+                X_(3) = 1.0;
 
-            double zc = X_(2);
-            Vector4d x_;
-            x_ = targetP*X_;
+                double zc = X_(2);
+                Vector4d x_;
+                x_ = targetP*X_;
 
-            // TODO
+                // TODO
 
+            }
         }
+
     }
 
 }

@@ -7,7 +7,7 @@
 #include "vector"
 #include "string"
 #include "Eigen/Dense"
-#include "opencv2/core.hpp"
+#include "opencv2/opencv.hpp"
 #include "pcl/point_types.h"
 #include "pcl/io/pcd_io.h"
 #include "opencv2/core/eigen.hpp"
@@ -62,7 +62,7 @@ public:
     void projFromUVToXYZ( Mat& rgb, Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZRGB>& cd);
 
     // project from XYZ to UV, since you need to project the pointcloud to a visual image plane
-    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZRGB>& cd, Mat& rgb, Mat& dep, Matrix4d &targetP);
+    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZRGB>& cd, Matrix4d &targetP, Mat& rgb, Mat& dep);
 
     CalibStruct* cali;
 
