@@ -17,16 +17,18 @@ vector
 ../include/vector
 string
 ../include/string
-Eigen/Dense
-../include/Eigen/Dense
-opencv2/opencv.hpp
-../include/opencv2/opencv.hpp
 pcl/point_types.h
 ../include/pcl/point_types.h
 pcl/io/pcd_io.h
 ../include/pcl/io/pcd_io.h
+opencv2/opencv.hpp
+../include/opencv2/opencv.hpp
 opencv2/core/eigen.hpp
 ../include/opencv2/core/eigen.hpp
+Eigen/Dense
+../include/Eigen/Dense
+Eigen/Core
+../include/Eigen/Core
 
 /home/sheng/free-view-point/Examples/vgftv/main.cpp
 tool.h

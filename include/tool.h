@@ -6,11 +6,15 @@
 #include "fstream"
 #include "vector"
 #include "string"
-#include "Eigen/Dense"
-#include "opencv2/opencv.hpp"
+
 #include "pcl/point_types.h"
 #include "pcl/io/pcd_io.h"
+
+#include "opencv2/opencv.hpp"
 #include "opencv2/core/eigen.hpp"
+
+#include "Eigen/Dense"
+#include "Eigen/Core"
 
 using namespace cv;
 using namespace std;
@@ -64,6 +68,11 @@ public:
     // fusing two depth image in novel view point image plane
     void fusingDepth(Mat& left, Mat& right, Mat& target);
 
+    //fusing two rgb image
+    void fusingRgb(Mat& left_rgb, Mat& left_dep, vector<cv::Point2i>& left_vir_link_orig, Matrix<double,3,1>& left_T,
+                   Mat& right_rgb, Mat& right_dep, vector<cv::Point2i>& right_vir_link_orig, Matrix<double,3,1>& right_T,
+                   Mat& target, Matrix<double,3,1>& target_T);
+
 
     // my god, in this paper, when we project depth or rgb image to a virtual image plane, rgb and depth
     // is uncorrelation  !!!!
@@ -72,14 +81,14 @@ public:
 
     // infact , I think this two function should be operate in one function.
     // project from UV to XYZ
-    void projFromUVToXYZ( Mat& rgb, Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZRGB>& cd);
+    void projFromUVToXYZ( Mat& rgb, Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZRGB>& cd); // not use
 
     void projFromUVToXYZ( Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZ>& cd);
 
     // project from XYZ to UV, since you need to project the pointcloud to a visual image plane
-    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZRGB>& cd, Matrix4d &targetP, Mat& rgb, Mat& dep);
+    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZRGB>& cd, Matrix4d &targetP, Mat& rgb, Mat& dep); // not use
 
-    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZ>& cd, Matrix4d &targetP, Mat& dep);
+    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZ>& cd, Matrix4d &targetP, Mat& dep, std::vector<cv::Point>& vir_link_ori);
 
 
 
@@ -90,8 +99,7 @@ private:
     int MaxZ = 120;
     int MinZ = 44;
 
-    pcl::PointCloud<pcl::PointXYZ> cld_map; // this global pointcloud might not be used
-                                            // since you optimite those fusing image in the virtual image plane.
+    int THRESHOLD = 5;
 
 };
 

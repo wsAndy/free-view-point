@@ -200,9 +200,19 @@ void Tool::rendering(vector<int> &img_id, Matrix4d& targetP)
     Mat left_r = cali[img_id[0]].rgb;
     Mat right_r = cali[img_id[1]].rgb;
 
-    Matrix4d left_P = cali[img_id[0]].mP;
-    Matrix4d right_P = cali[img_id[1]].mP;
+//    double *left_T = cali[img_id[0]].mT;
+//    double *right_T = cali[img_id[1]].mT;
+    Matrix<double,3,1> left_T;
+    Matrix<double,3,1> right_T;
+    Matrix<double,3,1> target_T;
 
+    left_T = (cali[img_id[0]].mP).block(0,3,3,1);
+    right_T = (cali[img_id[1]].mP).block(0,3,3,1);
+    target_T = targetP.block(0,3,3,1);
+
+
+    // point cloud's point is link to image's pixel , which has the same index.!!!
+    // which makes `vir_link_ori` more easier.
     pcl::PointCloud<pcl::PointXYZ> tmp_l_cd;
     pcl::PointCloud<pcl::PointXYZ> tmp_r_cd;
 
@@ -215,14 +225,18 @@ void Tool::rendering(vector<int> &img_id, Matrix4d& targetP)
      **/
 
     Mat left_vir_d; // left project to virtual depth image.
+    std::vector<cv::Point2i> left_vir_link_orig; // used to link pixels in origin image to those pixels in virtual image plane
+
 
     projFromUVToXYZ(left_d,img_id[0],tmp_l_cd);
-    projFromXYZToUV(tmp_l_cd,targetP,left_vir_d);
+    projFromXYZToUV(tmp_l_cd,targetP,left_vir_d,left_vir_link_orig);
 
     Mat right_vir_d; // right project to virtual depth image
+    std::vector<cv::Point2i> right_vir_link_orig; // used to link pixels in origin image to those pixels in virtual image plane
+
 
     projFromUVToXYZ(right_d,img_id[0],tmp_r_cd);
-    projFromXYZToUV(tmp_r_cd,targetP,right_vir_d);
+    projFromXYZToUV(tmp_r_cd,targetP,right_vir_d,right_vir_link_orig);
 
     fusingDepth(left_vir_d,right_vir_d,vir_depth);
 
@@ -242,8 +256,73 @@ void Tool::rendering(vector<int> &img_id, Matrix4d& targetP)
      */
 
     // TODO
+    fusingRgb(left_r,left_d,left_vir_link_orig, left_T,
+              right_r,right_d,right_vir_link_orig, right_T,
+              vir_rgb, target_T );
 
+}
 
+/**
+ * generate rgb image in novel viewpoint image plane
+ *
+ * input: left and right rgb image
+ * output: virtual imahe plane rgb image
+ */
+
+void Tool::fusingRgb(Mat &left_rgb, Mat &left_dep, vector<Point2i> &left_vir_link_orig, Matrix<double,3,1>& left_T,
+                     Mat &right_rgb, Mat &right_dep, vector<Point2i> &right_vir_link_orig, Matrix<double,3,1>& right_T,
+                     Mat &target_rgb, Matrix<double,3,1>& target_T)
+{
+    Array3d t1 = target_T - left_T;
+    Array3d t2 = target_T - right_T;
+
+    double sub_L = sqrt(t1.square().sum());
+    double sub_R = sqrt(t2.square().sum());
+
+    double alpha = (sub_L)/(sub_L + sub_R);
+
+    target_rgb = cv::Mat::zeros(left_rgb.rows,left_rgb.cols,CV_8UC3);
+
+    for(int i = 0; i < left_rgb.rows; ++i)
+    {
+        for(int j = 0; j < left_rgb.cols; ++j)
+        {
+
+            // for those u,v that don not match any ul,vl/ur,vr , since their depth value has been set 0,
+            // which must smaller than THRESOLD, so, Point(-1,-1) will not be used to find pixel that
+            // in left image or right image.
+
+            // calculate ZR(u,v) and ZL(u,v), Z is depth
+            int occL = left_dep.at<uchar>(i,j) > THRESHOLD ? 0 : 1;
+            int occR = right_dep.at<uchar>(i,j) > THRESHOLD ? 0 : 1;
+
+            if(occL == 0 && occR == 0)
+            {
+                target_rgb.at<cv::Vec3b>(i,j)[0] = (1-alpha)*left_rgb.at<cv::Vec3b>(left_vir_link_orig[i*left_rgb.cols+j])[0]
+                        + alpha*right_rgb.at<cv::Vec3b>(right_vir_link_orig[i*left_rgb.cols+j])[0];
+                target_rgb.at<cv::Vec3b>(i,j)[1] = (1-alpha)*left_rgb.at<cv::Vec3b>(left_vir_link_orig[i*left_rgb.cols+j])[1]
+                        + alpha*right_rgb.at<cv::Vec3b>(right_vir_link_orig[i*left_rgb.cols+j])[1];
+                target_rgb.at<cv::Vec3b>(i,j)[2] = (1-alpha)*left_rgb.at<cv::Vec3b>(left_vir_link_orig[i*left_rgb.cols+j])[2]
+                        + alpha*right_rgb.at<cv::Vec3b>(right_vir_link_orig[i*left_rgb.cols+j])[2];
+
+            }else if(occL == 0 && occR == 1)
+            {
+                target_rgb.at<cv::Vec3b>(i,j)[0] = left_rgb.at<cv::Vec3b>(left_vir_link_orig[i*left_rgb.cols+j])[0];
+                target_rgb.at<cv::Vec3b>(i,j)[1] = left_rgb.at<cv::Vec3b>(left_vir_link_orig[i*left_rgb.cols+j])[1];
+                target_rgb.at<cv::Vec3b>(i,j)[2] = left_rgb.at<cv::Vec3b>(left_vir_link_orig[i*left_rgb.cols+j])[2];
+
+            }else if (occL == 1 && occR == 0)
+            {
+                target_rgb.at<cv::Vec3b>(i,j)[0] = right_rgb.at<cv::Vec3b>(right_vir_link_orig[i*left_rgb.cols+j])[0];
+                target_rgb.at<cv::Vec3b>(i,j)[1] = right_rgb.at<cv::Vec3b>(right_vir_link_orig[i*left_rgb.cols+j])[1];
+                target_rgb.at<cv::Vec3b>(i,j)[2] = right_rgb.at<cv::Vec3b>(right_vir_link_orig[i*left_rgb.cols+j])[2];
+
+            }else{
+                ;
+            }
+
+        }
+    }
 }
 
 /**
@@ -279,14 +358,18 @@ void Tool::fusingDepth(Mat &left, Mat &right, Mat &target)
 
                 }else{
                     // both has value
-
-                    target.at<uchar>(i,j) = min(left.at<uchar>(i,j),right.at<uchar>(i,j));
+                    if(left.at<uchar>(i,j) > right.at<uchar>(i,j) )
+                    {
+                        target.at<uchar>(i,j) = right.at<uchar>(i,j);
+                    }else{
+                        target.at<uchar>(i,j) = left.at<uchar>(i,j);
+                    }
                 }
             }
 
         }
 
-        cerr << "In fusing Depth image, " << (count)/(left.rows * left.cols)
+        cerr << endl << "In fusing Depth image, " << (count)/(left.rows * left.cols)
              << "% points is empty in virtual image" << endl;
     }
 
@@ -308,6 +391,7 @@ void Tool::fusingDepth(Mat &left, Mat &right, Mat &target)
  *  output: cd_
  **/
 
+// this function  not use
 void Tool::projFromUVToXYZ(Mat &rgb, Mat &dep, int index, pcl::PointCloud<pcl::PointXYZRGB> &cd_)
 {
     cd_.width = rgb.cols;
@@ -386,8 +470,9 @@ void Tool::projFromUVToXYZ( Mat &dep, int index, pcl::PointCloud<pcl::PointXYZ> 
  *  input: cd_
  *  output: rgb, dep
  */
-
+// this function  not use
 void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB> &cd_, Eigen::Matrix4d & targetP, Mat &rgb, Mat &dep)
+
 {
 
     // here you need to initial rgb and depth first since not all the pixel in these two image will be fixed.
@@ -443,7 +528,10 @@ void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB> &cd_, Eigen::Matrix
  *   only depth image
  */
 
-void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZ> &cd_, Eigen::Matrix4d & targetP, Mat &dep)
+void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZ> &cd_,
+                           Eigen::Matrix4d & targetP,
+                           Mat &dep,
+                           std::vector<cv::Point>& vir_link_ori)
 {
 
     // here you need to initial rgb and depth first since not all the pixel in these two image will be fixed.
@@ -455,6 +543,7 @@ void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZ> &cd_, Eigen::Matrix4d 
         // initial depth
         // TODO
 
+        vir_link_ori.clear();
         dep = Mat::zeros(cd_.height,cd_.width,CV_8UC1);
 
         for(int i = 0; i < cd_.height; ++i)
@@ -473,10 +562,12 @@ void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZ> &cd_, Eigen::Matrix4d 
 
                 if(zc < 0.2) // important in test.
                 {
+                    vir_link_ori.push_back(Point(-1,-1));
                     continue;
                 }
 
                 dep.at<uchar>(int(x_(1)/zc),int(x_(0)/zc)) = getPixelDepth(zc);
+                vir_link_ori.push_back(Point(int(x_(0)/zc),int(x_(1)/zc)));
             }
         }
     }
