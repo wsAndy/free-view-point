@@ -61,6 +61,10 @@ public:
     // rendering to novel viewpoint.
     void rendering(vector<int>& img_id, Matrix4d& targetP);
 
+    // fusing two depth image in novel view point image plane
+    void fusingDepth(Mat& left, Mat& right, Mat& target);
+
+
     // my god, in this paper, when we project depth or rgb image to a virtual image plane, rgb and depth
     // is uncorrelation  !!!!
 

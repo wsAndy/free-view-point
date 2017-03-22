@@ -191,14 +191,21 @@ void Tool::rendering(vector<int> &img_id, Matrix4d& targetP)
 {
     // use two image
 
-    Mat left_d = cali[img_id[0]].depth;
-    Mat right_d = cali[img_id[1]].depth;
+    Mat vir_depth; // depth image in novel viewpoint
+    Mat vir_rgb;   // rgb image in novel viewpoint
+
+    Mat left_d = cali[img_id[0]].dep;
+    Mat right_d = cali[img_id[1]].dep;
 
     Mat left_r = cali[img_id[0]].rgb;
     Mat right_r = cali[img_id[1]].rgb;
 
     Matrix4d left_P = cali[img_id[0]].mP;
     Matrix4d right_P = cali[img_id[1]].mP;
+
+    pcl::PointCloud<pcl::PointXYZ> tmp_l_cd;
+    pcl::PointCloud<pcl::PointXYZ> tmp_r_cd;
+
 
     /**
      * project left depth image to virtual image plane
@@ -207,10 +214,19 @@ void Tool::rendering(vector<int> &img_id, Matrix4d& targetP)
      *
      **/
 
-    projFromUVToXYZ(left_d,);
+    Mat left_vir_d; // left project to virtual depth image.
 
+    projFromUVToXYZ(left_d,img_id[0],tmp_l_cd);
+    projFromXYZToUV(tmp_l_cd,targetP,left_vir_d);
 
-    //TODO
+    Mat right_vir_d; // right project to virtual depth image
+
+    projFromUVToXYZ(right_d,img_id[0],tmp_r_cd);
+    projFromXYZToUV(tmp_r_cd,targetP,right_vir_d);
+
+    fusingDepth(left_vir_d,right_vir_d,vir_depth);
+
+    // vir_depth  is already.
 
     /**
      *  you can smooth the depth image here.
@@ -230,14 +246,62 @@ void Tool::rendering(vector<int> &img_id, Matrix4d& targetP)
 
 }
 
+/**
+ *  fusing two depth image
+ *
+ */
+
+void Tool::fusingDepth(Mat &left, Mat &right, Mat &target)
+{
+    if(left.cols!=right.cols || left.rows!= right.rows)
+    {
+        cerr << "Error! in function [fusingDepth], input left image and right image not in the same size." <<endl;
+    }else{
+
+        target = cv::Mat::zeros(left.rows,left.cols,CV_8UC1);
+
+        int count = 0;
+        for(int i = 0; i < left.rows; ++i)
+        {
+            for(int j = 0; j < left.cols; ++j)
+            {
+                if (left.at<uchar>(i,j) < 1 && right.at<uchar>(i,j) < 1)
+                { // both not have value
+                    count = count + 1; // count those empty point
+                  continue; // stay 0
+                }else if ( left.at<uchar>(i,j) < 1 && right.at<uchar>(i,j) >=1 )
+                {
+                    target.at<uchar>(i,j) = right.at<uchar>(i,j);
+
+                }else if (left.at<uchar>(i,j) >= 1 && right.at<uchar>(i,j) < 1)
+                {
+                    target.at<uchar>(i,j) = left.at<uchar>(i,j);
+
+                }else{
+                    // both has value
+
+                    target.at<uchar>(i,j) = min(left.at<uchar>(i,j),right.at<uchar>(i,j));
+                }
+            }
+
+        }
+
+        cerr << "In fusing Depth image, " << (count)/(left.rows * left.cols)
+             << "% points is empty in virtual image" << endl;
+    }
+
+}
+
+
+
 
 /**
- *   here need to accelerate
+ *  here need to accelerate
  *
- * project from UV (image coordinate ) to XYZ (3D space)
+ *  project from UV (image coordinate ) to XYZ (3D space)
  *
  *
- * Z_w * x = P * X
+ *  Z_w * x = P * X
  *      UV       XYZ
  *
  *  input: rgb , dep
@@ -279,9 +343,9 @@ void Tool::projFromUVToXYZ(Mat &rgb, Mat &dep, int index, pcl::PointCloud<pcl::P
 
 
 /**
- *   here need to accelerate
+ *  here need to accelerate
  *
- * project from UV (image coordinate ) to XYZ (3D space)
+ *  project from UV (image coordinate ) to XYZ (3D space)
  *
  *  only project depth
  *
