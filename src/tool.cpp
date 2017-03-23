@@ -44,7 +44,7 @@ void Tool::showParameter()
         {
             for(int j = 0; j < 3; ++j)
             {
-                cout << cali->mK[i][j] << "  ";
+                cout << cali[k].mK[i][j] << "  ";
             }
             cout << endl;
         }
@@ -53,10 +53,10 @@ void Tool::showParameter()
         {
             for(int j = 0; j < 3; ++j)
             {
-                cout << cali->mR[i][j] << "  ";
+                cout << cali[k].mR[i][j] << "  ";
             }
 
-            cout << cali->mT[i] <<endl;
+            cout << cali[k].mT[i] <<endl;
         }
 
     }
@@ -180,12 +180,15 @@ void Tool::showPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cd_p)
     {
         cout << "cloud point is empty." <<endl;
     }else{
+        // although the origin in viewer is not set and the scale is not correct,
+        // it not influence the project pixles in target virtual image plane.
+
         boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer1
                 (new pcl::visualization::PCLVisualizer("XYZ")); // viewer ID
 
         viewer1->addPointCloud<pcl::PointXYZ>(cd_p,"XYZ"); // cloud ID
         viewer1->addCoordinateSystem(1.0);
-        viewer1->initCameraParameters();
+//        viewer1->initCameraParameters();
 
         viewer1->spin();
     }
@@ -201,8 +204,9 @@ void Tool::showPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_p)
                 (new pcl::visualization::PCLVisualizer("XYZRGB")); // viewer ID
 
         viewer1->addPointCloud<pcl::PointXYZRGB>(cd_p,"XYZRGB"); // cloud ID
-        viewer1->addCoordinateSystem(1.0);
-        viewer1->initCameraParameters();
+        viewer1->addCoordinateSystem(1);
+//        viewer1->setCameraPosition();
+//        viewer1->initCameraParameters();
 
         viewer1->spin();
     }
@@ -233,6 +237,7 @@ void Tool::generateP()
         Matrix4d eg_P;
         eg_P.block<3,3>(0,0) = eg_mk*eg_mr;
         eg_P.block<3,1>(0,3) = eg_mk*eg_mt;
+
         eg_P(3,0) = 0.0;
         eg_P(3,1) = 0.0;
         eg_P(3,2) = 0.0;
@@ -556,8 +561,9 @@ void Tool::projFromUVToXYZ( Mat &dep, int index, pcl::PointCloud<pcl::PointXYZ>:
  *  output: rgb, dep
  */
 // this function  not use
-void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_, Eigen::Matrix4d & targetP, Mat &rgb, Mat &dep)
-
+void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_,
+                           Eigen::Matrix4d & targetP, Mat &rgb, Mat &dep,
+                           std::vector<cv::Point>& vir_link_ori)
 {
     // here you need to initial rgb and depth first since not all the pixel in these two image will be fixed.
 
@@ -568,7 +574,7 @@ void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_, Eigen::Ma
         // initial rgb and depth
         // TODO
 
-        cout << "1" <<endl;
+        cout << "XYZRGB project UV .." <<endl;
 
         rgb = Mat::zeros(cd_->height,cd_->width,CV_8UC3);
         dep = Mat::zeros(cd_->height,cd_->width,CV_8UC1);
@@ -577,7 +583,6 @@ void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_, Eigen::Ma
         {
             for(int j = 0 ; j < cd_->width; ++j)
             {
-                cout << "2" <<endl;
                 Vector4d X_;
                 X_(0) = cd_->points[i*cd_->width+j].x;
                 X_(1) = cd_->points[i*cd_->width+j].y;
@@ -590,6 +595,12 @@ void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_, Eigen::Ma
 
                 if(zc < 0.2) // important in test.
                 {
+                    vir_link_ori.push_back(Point(-1,-1));
+                    continue;
+                }
+                if(x_(0) < 0 || x_(1) < 0)
+                {
+                    vir_link_ori.push_back(Point(-1,-1));
                     continue;
                 }
 
@@ -600,7 +611,7 @@ void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_, Eigen::Ma
                 dep.at<uchar>(int(x_(1)/zc),int(x_(0)/zc)) = getPixelDepth(zc);
             }
         }
-        cout << "leave" <<endl;
+        cout << "XYZRGB project to UV .. OK" <<endl;
     }
 
 }
@@ -634,6 +645,7 @@ void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZ>::Ptr cd_,
         vir_link_ori.clear();
         dep = Mat::zeros(cd_->height,cd_->width,CV_8UC1);
 
+        cout << "Start project XYZ to UV.." <<endl;
         for(int i = 0; i < cd_->height; ++i)
         {
             for(int j = 0 ; j < cd_->width; ++j)
@@ -654,10 +666,19 @@ void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZ>::Ptr cd_,
                     continue;
                 }
 
+                if(x_(0) < 0 || x_(1) < 0)
+                {
+                    vir_link_ori.push_back(Point(-1,-1));
+                    continue;
+                }
+
                 dep.at<uchar>(int(x_(1)/zc),int(x_(0)/zc)) = getPixelDepth(zc);
+
                 vir_link_ori.push_back(Point(int(x_(0)/zc),int(x_(1)/zc)));
             }
         }
+
+        cout << "XYZ project to UV .. OK" << endl;
     }
 
 }

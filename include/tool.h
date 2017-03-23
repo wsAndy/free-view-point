@@ -98,7 +98,7 @@ public:
     void projFromUVToXYZ( Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZ>::Ptr cd);
 
     // project from XYZ to UV, since you need to project the pointcloud to a visual image plane
-    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd, Matrix4d &targetP, Mat& rgb, Mat& dep); // not use
+    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd, Matrix4d &targetP, Mat& rgb, Mat& dep, std::vector<cv::Point>& vir_link_ori); // not use
 
     void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZ>::Ptr cd, Matrix4d &targetP, Mat& dep, std::vector<cv::Point>& vir_link_ori);
 

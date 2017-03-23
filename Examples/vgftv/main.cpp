@@ -23,14 +23,13 @@ int main(int argc, char ** argv)
 
     // now each tool.cali[] has mP, cali[4]
 
-
     //load camera's image into tool.cali
     string path = "./../../dataset/MSR3DVideo-Breakdancers/cam";
 
-    vector<int> camID;
+    std::vector<int> camID;
 
     camID.push_back(0);
-    camID.push_back(7);
+    camID.push_back(1);
 
     tool.loadImage(path,camID);// image's startIndex = 0, endIndex = 1 defaultly
 
@@ -41,11 +40,11 @@ int main(int argc, char ** argv)
      *
      * **/
 
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cd_p( new pcl::PointCloud<pcl::PointXYZ>);
+//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_p( new pcl::PointCloud<pcl::PointXYZRGB>);
 
-    tool.projFromUVToXYZ(tool.cali[camID[0]].dep,camID[0],cd_p);
+//    tool.projFromUVToXYZ(tool.cali[camID[0]].rgb,tool.cali[camID[0]].dep,camID[0],cd_p);
 
-    tool.showPointCloud(cd_p);
+//    tool.showPointCloud(cd_p);
 
     /**
      *  from XYZ to UV , show me the image
@@ -53,6 +52,32 @@ int main(int argc, char ** argv)
      *  TODO
      *
      */
+//    pcl::PointCloud<pcl::PointXYZ>::Ptr cd_p( new pcl::PointCloud<pcl::PointXYZ>);
+
+//    tool.projFromUVToXYZ(tool.cali[camID[0]].dep,camID[0],cd_p);
+
+//    Mat target_dep;
+//    std::vector<cv::Point> vir_link_ori;
+//    tool.projFromXYZToUV(cd_p,tool.cali[camID[1]].mP,target_dep,vir_link_ori);
+
+////    imshow("dep",target_dep);
+
+//    Mat ori_dep_img = tool.cali[camID[1]].dep;
+//    cvtColor(ori_dep_img,ori_dep_img,CV_BGR2GRAY);
+
+//    resize(target_dep,target_dep,Size(ori_dep_img.cols,ori_dep_img.rows));
+
+//    vector<Mat> output;
+//    output.push_back(ori_dep_img); // B
+//    output.push_back(Mat(Size(ori_dep_img.cols,ori_dep_img.rows),CV_8UC1));
+//    output.push_back(target_dep); // R
+
+//    Mat output_img;
+//    merge(output,output_img);
+
+//    imshow("fusing",output_img);
+
+//    waitKey(0);
 
 
     /**
@@ -97,7 +122,8 @@ void test(Tool& tool)
     Mat rgb;
     Mat depth;
 
-    tool.projFromXYZToUV(cd,P,rgb,depth);
+    std::vector<cv::Point> tmp_vv;
+    tool.projFromXYZToUV(cd,P,rgb,depth,tmp_vv);
 
     imshow("rgb",rgb);
     imshow("depth",depth);
