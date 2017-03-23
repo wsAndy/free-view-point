@@ -28,8 +28,8 @@ int main(int argc, char ** argv)
 
     std::vector<int> camID;
 
-    camID.push_back(0);
-    camID.push_back(1);
+    camID.push_back(3);
+    camID.push_back(5);
 
     tool.loadImage(path,camID);// image's startIndex = 0, endIndex = 1 defaultly
 
@@ -54,13 +54,13 @@ int main(int argc, char ** argv)
      */
 //    pcl::PointCloud<pcl::PointXYZ>::Ptr cd_p( new pcl::PointCloud<pcl::PointXYZ>);
 
-//    tool.projFromUVToXYZ(tool.cali[camID[0]].dep,camID[0],cd_p);
+//    tool.projFromUVToXYZ(tool.cali[camID[0]].rgb, tool.cali[camID[0]].dep,camID[0],cd_p);
 
 //    Mat target_dep;
 //    std::vector<cv::Point> vir_link_ori;
 //    tool.projFromXYZToUV(cd_p,tool.cali[camID[1]].mP,target_dep,vir_link_ori);
 
-////    imshow("dep",target_dep);
+//    imshow("dep",target_dep);
 
 //    Mat ori_dep_img = tool.cali[camID[1]].dep;
 //    cvtColor(ori_dep_img,ori_dep_img,CV_BGR2GRAY);
@@ -88,6 +88,10 @@ int main(int argc, char ** argv)
      *  TODO
      *
      * */
+
+    Matrix4d target_P = tool.cali[4].mP;
+
+    tool.rendering(camID,target_P);
 
 
     return 0;

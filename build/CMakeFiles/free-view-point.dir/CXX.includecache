@@ -6,6 +6,12 @@
 
 #IncludeRegexTransform: 
 
+../include/test_lib.h
+iostream
+-
+string
+-
+
 ../include/tool.h
 stdio.h
 ../include/stdio.h
@@ -37,6 +43,10 @@ Eigen/Dense
 ../include/Eigen/Dense
 Eigen/Core
 ../include/Eigen/Core
+
+/home/sheng/free-view-point/src/test_lib.cc
+test_lib.h
+/home/sheng/free-view-point/src/test_lib.h
 
 /home/sheng/free-view-point/src/tool.cpp
 tool.h

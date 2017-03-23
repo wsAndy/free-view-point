@@ -277,21 +277,19 @@ double Tool::getPixelDepth(double dw)
     return 255.0*(MaxZ*MinZ)*(1/dw-1/MaxZ)/(MaxZ-MinZ);
 }
 
-void Tool::rendering(vector<int> &img_id, Matrix4d& targetP)
+void Tool::rendering(vector<int> &img_id, Matrix4d& targetP )
 {
     // use two image
-
-    Mat vir_depth; // depth image in novel viewpoint
-    Mat vir_rgb;   // rgb image in novel viewpoint
 
     Mat left_d = cali[img_id[0]].dep;
     Mat right_d = cali[img_id[1]].dep;
 
+    Mat vir_depth = Mat::zeros(left_d.cols,left_d.rows,CV_8UC1); // depth image in novel viewpoint
+    Mat vir_rgb = Mat::zeros(left_d.cols,left_d.rows,CV_8UC3);   // rgb image in novel viewpoint
+
     Mat left_r = cali[img_id[0]].rgb;
     Mat right_r = cali[img_id[1]].rgb;
 
-//    double *left_T = cali[img_id[0]].mT;
-//    double *right_T = cali[img_id[1]].mT;
     Matrix<double,3,1> left_T;
     Matrix<double,3,1> right_T;
     Matrix<double,3,1> target_T;
@@ -314,21 +312,23 @@ void Tool::rendering(vector<int> &img_id, Matrix4d& targetP)
      *
      **/
 
-    Mat left_vir_d; // left project to virtual depth image.
+    Mat left_vir_d = Mat::zeros(left_d.rows, left_d.cols,CV_8UC1); // left project to virtual depth image.
     std::vector<cv::Point2i> left_vir_link_orig; // used to link pixels in origin image to those pixels in virtual image plane
-
 
     projFromUVToXYZ(left_d,img_id[0],tmp_l_cd);
     projFromXYZToUV(tmp_l_cd,targetP,left_vir_d,left_vir_link_orig);
 
-    Mat right_vir_d; // right project to virtual depth image
+    Mat right_vir_d = Mat::zeros(left_d.rows, left_d.cols,CV_8UC1); // right project to virtual depth image
     std::vector<cv::Point2i> right_vir_link_orig; // used to link pixels in origin image to those pixels in virtual image plane
 
-
-    projFromUVToXYZ(right_d,img_id[0],tmp_r_cd);
+    projFromUVToXYZ(right_d,img_id[1],tmp_r_cd);
     projFromXYZToUV(tmp_r_cd,targetP,right_vir_d,right_vir_link_orig);
 
     fusingDepth(left_vir_d,right_vir_d,vir_depth);
+    cout << "fusing depth over." <<endl;
+
+//    imshow("vir",vir_depth);
+//    waitKey(0);
 
     // vir_depth  is already.
 
@@ -349,6 +349,10 @@ void Tool::rendering(vector<int> &img_id, Matrix4d& targetP)
     fusingRgb(left_r,left_d,left_vir_link_orig, left_T,
               right_r,right_d,right_vir_link_orig, right_T,
               vir_rgb, target_T );
+
+    imshow("vir_rgb",vir_rgb);
+    waitKey(0);
+    cout << "fusing rgb over." <<endl;
 
 }
 
@@ -371,7 +375,7 @@ void Tool::fusingRgb(Mat &left_rgb, Mat &left_dep, vector<Point2i> &left_vir_lin
 
     double alpha = (sub_L)/(sub_L + sub_R);
 
-    target_rgb = cv::Mat::zeros(left_rgb.rows,left_rgb.cols,CV_8UC3);
+//    target_rgb = cv::Mat::zeros(left_rgb.rows,left_rgb.cols,CV_8UC3);
 
     for(int i = 0; i < left_rgb.rows; ++i)
     {
@@ -420,46 +424,53 @@ void Tool::fusingRgb(Mat &left_rgb, Mat &left_dep, vector<Point2i> &left_vir_lin
  *
  */
 
-void Tool::fusingDepth(Mat &left, Mat &right, Mat &target)
+void Tool::fusingDepth(Mat &left_, Mat &right_, Mat &target)
 {
-    if(left.cols!=right.cols || left.rows!= right.rows)
+    if(left_.cols!=right_.cols || left_.rows!= right_.rows)
     {
         cerr << "Error! in function [fusingDepth], input left image and right image not in the same size." <<endl;
     }else{
 
-        target = cv::Mat::zeros(left.rows,left.cols,CV_8UC1);
+        cout << "in fusing." <<endl;
+
+//        target = Mat::zeros(left.rows,left.cols,CV_8UC1); // fuck ??!!!
 
         int count = 0;
-        for(int i = 0; i < left.rows; ++i)
+        for(int i = 0; i < left_.rows; ++i)
         {
-            for(int j = 0; j < left.cols; ++j)
+            for(int j = 0; j < left_.cols; ++j)
             {
-                if (left.at<uchar>(i,j) < 1 && right.at<uchar>(i,j) < 1)
-                { // both not have value
-                    count = count + 1; // count those empty point
-                  continue; // stay 0
-                }else if ( left.at<uchar>(i,j) < 1 && right.at<uchar>(i,j) >=1 )
-                {
-                    target.at<uchar>(i,j) = right.at<uchar>(i,j);
 
-                }else if (left.at<uchar>(i,j) >= 1 && right.at<uchar>(i,j) < 1)
+                if (left_.at<uchar>(i,j) < 1 && right_.at<uchar>(i,j) < 1)
+                { // both not have value
+
+                    count = count + 1; // count those empty point
+                    continue; // stay 0
+                }else if ( left_.at<uchar>(i,j) < 1 && right_.at<uchar>(i,j) >=1 )
                 {
-                    target.at<uchar>(i,j) = left.at<uchar>(i,j);
+//                    cout << "                    R"<<endl;
+                    target.at<uchar>(i,j) = right_.at<uchar>(i,j);
+
+                }else if (left_.at<uchar>(i,j) >= 1 && right_.at<uchar>(i,j) < 1)
+                {
+//                    cout << "L                    "<<endl;
+                    target.at<uchar>(i,j) = left_.at<uchar>(i,j);
 
                 }else{
                     // both has value
-                    if(left.at<uchar>(i,j) > right.at<uchar>(i,j) )
+//                    cout << "          =          "<<endl;
+                    if(left_.at<uchar>(i,j) > right_.at<uchar>(i,j) )
                     {
-                        target.at<uchar>(i,j) = right.at<uchar>(i,j);
+                        target.at<uchar>(i,j) = right_.at<uchar>(i,j);
                     }else{
-                        target.at<uchar>(i,j) = left.at<uchar>(i,j);
+                        target.at<uchar>(i,j) = left_.at<uchar>(i,j);
                     }
                 }
             }
 
         }
 
-        cerr << endl << "In fusing Depth image, " << (count)/(left.rows * left.cols)
+        cerr << endl << "In fusing Depth image, " << (count)/(left_.rows * left_.cols)
              << "% points is empty in virtual image" << endl;
     }
 
@@ -480,8 +491,7 @@ void Tool::fusingDepth(Mat &left, Mat &right, Mat &target)
  *  input: rgb , dep
  *  output: cd_
  **/
-
-// this function  not use
+// this input dep is Vec3b ! not uchar
 void Tool::projFromUVToXYZ(Mat &rgb, Mat &dep, int index, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_)
 {
     cd_->width = rgb.cols;
@@ -560,9 +570,10 @@ void Tool::projFromUVToXYZ( Mat &dep, int index, pcl::PointCloud<pcl::PointXYZ>:
  *  input: cd_
  *  output: rgb, dep
  */
-// this function  not use
+
 void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_,
-                           Eigen::Matrix4d & targetP, Mat &rgb, Mat &dep,
+                           Eigen::Matrix4d & targetP,
+                           Mat &rgb, Mat &dep,
                            std::vector<cv::Point>& vir_link_ori)
 {
     // here you need to initial rgb and depth first since not all the pixel in these two image will be fixed.
@@ -642,8 +653,11 @@ void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZ>::Ptr cd_,
         // initial depth
         // TODO
 
-        vir_link_ori.clear();
-        dep = Mat::zeros(cd_->height,cd_->width,CV_8UC1);
+        // here, you should not clear it if it is empty.
+        if(!vir_link_ori.empty())
+        {
+            vir_link_ori.clear();
+        }
 
         cout << "Start project XYZ to UV.." <<endl;
         for(int i = 0; i < cd_->height; ++i)
@@ -660,6 +674,10 @@ void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZ>::Ptr cd_,
                 Vector4d x_;
                 x_ = targetP*X_;
 
+
+                // these judge operate is every important !!!!
+                // since the program will not stop if you locate a wide-point.
+                // especially the third one.
                 if(zc < 0.2) // important in test.
                 {
                     vir_link_ori.push_back(Point(-1,-1));
@@ -667,6 +685,12 @@ void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZ>::Ptr cd_,
                 }
 
                 if(x_(0) < 0 || x_(1) < 0)
+                {
+                    vir_link_ori.push_back(Point(-1,-1));
+                    continue;
+                }
+
+                if( int(x_(1)/zc) >= dep.rows || int(x_(0)/zc) >= dep.cols)
                 {
                     vir_link_ori.push_back(Point(-1,-1));
                     continue;

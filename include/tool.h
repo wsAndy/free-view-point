@@ -93,14 +93,15 @@ public:
 
     // infact , I think this two function should be operate in one function.
     // project from UV to XYZ
-    void projFromUVToXYZ( Mat& rgb, Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd); // not use
+    void projFromUVToXYZ( Mat& rgb, Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd);
 
     void projFromUVToXYZ( Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZ>::Ptr cd);
 
     // project from XYZ to UV, since you need to project the pointcloud to a visual image plane
-    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd, Matrix4d &targetP, Mat& rgb, Mat& dep, std::vector<cv::Point>& vir_link_ori); // not use
+    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd, Matrix4d &targetP, Mat& rgb, Mat& dep, std::vector<cv::Point>& vir_link_ori);
 
-    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZ>::Ptr cd, Matrix4d &targetP, Mat& dep, std::vector<cv::Point>& vir_link_ori);
+    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZ>::Ptr cd, Matrix4d &targetP, Mat& dep
+                          , std::vector<cv::Point>& vir_link_ori);
 
 
 
