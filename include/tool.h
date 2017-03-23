@@ -3,12 +3,16 @@
 
 #include "stdio.h"
 #include "iostream"
+#include "iomanip"
 #include "fstream"
+#include "sstream"
 #include "vector"
 #include "string"
 
 #include "pcl/point_types.h"
 #include "pcl/io/pcd_io.h"
+#include "pcl/visualization/cloud_viewer.h"
+#include "pcl/visualization/boost.h"
 
 #include "opencv2/opencv.hpp"
 #include "opencv2/core/eigen.hpp"
@@ -45,11 +49,19 @@ class Tool
 {
 public:
     Tool();
-    Tool(string dataset_name);
+    Tool(string dataset_name, int num);
     ~Tool();
 
     // operate *cali ;
     void loadImageParameter(char* file_name);
+
+    // load one image
+    void loadImage(string& campath, vector<int>& camID, int startIndex = 0, int endIndex = 1);
+
+    //show pointcloud
+    void showPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cd_p);
+
+    void showPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_p);
 
     void showParameter();
 
@@ -81,14 +93,14 @@ public:
 
     // infact , I think this two function should be operate in one function.
     // project from UV to XYZ
-    void projFromUVToXYZ( Mat& rgb, Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZRGB>& cd); // not use
+    void projFromUVToXYZ( Mat& rgb, Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd); // not use
 
-    void projFromUVToXYZ( Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZ>& cd);
+    void projFromUVToXYZ( Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZ>::Ptr cd);
 
     // project from XYZ to UV, since you need to project the pointcloud to a visual image plane
-    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZRGB>& cd, Matrix4d &targetP, Mat& rgb, Mat& dep); // not use
+    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd, Matrix4d &targetP, Mat& rgb, Mat& dep); // not use
 
-    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZ>& cd, Matrix4d &targetP, Mat& dep, std::vector<cv::Point>& vir_link_ori);
+    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZ>::Ptr cd, Matrix4d &targetP, Mat& dep, std::vector<cv::Point>& vir_link_ori);
 
 
 

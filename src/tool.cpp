@@ -10,7 +10,7 @@ Tool::Tool()
     cali = new ImageFrame[camera_num];
 }
 
-Tool::Tool(string dataset_name)
+Tool::Tool(string dataset_name, int cam_num)
 {
     if( dataset_name.compare("ballet") == 0)
     {
@@ -20,6 +20,8 @@ Tool::Tool(string dataset_name)
         MaxZ = 120;
         MinZ = 44;
     }
+
+    camera_num = cam_num;
 
     cali = new ImageFrame[camera_num];
 }
@@ -83,7 +85,7 @@ void Tool::loadImageParameter(char* file_name)
     {
         cerr << "ERROR! [" << file_name <<"] not exist."<<endl;
     }else{
-        cerr << "load calibration parameter" <<endl;
+        cerr << "load calibration parameter ..." <<endl;
 
         int camIdx;
         double tmp; // dummy
@@ -121,12 +123,93 @@ void Tool::loadImageParameter(char* file_name)
 
         fclose(f_read);
 
+        cout << "load OK." <<endl;
+
     }
 
 }
 
 
-/*
+/**
+ *   load one image( rgb and depth )
+ *
+ *
+ */
+
+void Tool::loadImage(string& campath, vector<int>& camID, int startIndex, int endIndex)
+{
+    stringstream ss;
+
+    for(int i = 0; i < camID.size(); ++i)
+    {
+        //color-cam1-f000.jpg, depth-cam1-f000.png
+
+        for(int imgIndex = startIndex; imgIndex < endIndex; ++imgIndex)
+        {
+            string color_path,dep_path;
+
+            ss << campath << camID[i] << "/color-cam"<<camID[i]<<"-f" << setfill('0')<< setw(3) << imgIndex <<".jpg";
+            ss >> color_path;
+            ss.clear();
+
+            ss << campath << camID[i] << "/depth-cam"<<camID[i]<<"-f" << setfill('0')<< setw(3) << imgIndex <<".png";
+            ss >> dep_path;
+            ss.clear();
+
+            cali[camID[i]].rgb = imread(color_path.c_str()); // here can only save one
+            cali[camID[i]].dep = imread(dep_path.c_str());   // here can only save one
+
+            color_path.clear();
+            dep_path.clear();
+        }
+    }
+    cout << "load Image OK" <<endl;
+}
+
+
+/**
+ *
+ *   show point cloud
+ *
+ *    input: pcl::Ptr
+ */
+
+void Tool::showPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cd_p)
+{
+    if(cd_p->size() == 0)
+    {
+        cout << "cloud point is empty." <<endl;
+    }else{
+        boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer1
+                (new pcl::visualization::PCLVisualizer("XYZ")); // viewer ID
+
+        viewer1->addPointCloud<pcl::PointXYZ>(cd_p,"XYZ"); // cloud ID
+        viewer1->addCoordinateSystem(1.0);
+        viewer1->initCameraParameters();
+
+        viewer1->spin();
+    }
+}
+
+void Tool::showPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_p)
+{
+    if(cd_p->size() == 0)
+    {
+        cout << "cloud point is empty." <<endl;
+    }else{
+        boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer1
+                (new pcl::visualization::PCLVisualizer("XYZRGB")); // viewer ID
+
+        viewer1->addPointCloud<pcl::PointXYZRGB>(cd_p,"XYZRGB"); // cloud ID
+        viewer1->addCoordinateSystem(1.0);
+        viewer1->initCameraParameters();
+
+        viewer1->spin();
+    }
+}
+
+
+/**
 *   use Eigen to calculate P matrix
 *
 **/
@@ -157,6 +240,8 @@ void Tool::generateP()
 
         cali[k].mP = eg_P;
     }
+
+    cout << "generate each camera's P, OK" <<endl;
 
 }
 
@@ -213,8 +298,8 @@ void Tool::rendering(vector<int> &img_id, Matrix4d& targetP)
 
     // point cloud's point is link to image's pixel , which has the same index.!!!
     // which makes `vir_link_ori` more easier.
-    pcl::PointCloud<pcl::PointXYZ> tmp_l_cd;
-    pcl::PointCloud<pcl::PointXYZ> tmp_r_cd;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr tmp_l_cd( new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr tmp_r_cd( new pcl::PointCloud<pcl::PointXYZ>);
 
 
     /**
@@ -392,15 +477,15 @@ void Tool::fusingDepth(Mat &left, Mat &right, Mat &target)
  **/
 
 // this function  not use
-void Tool::projFromUVToXYZ(Mat &rgb, Mat &dep, int index, pcl::PointCloud<pcl::PointXYZRGB> &cd_)
+void Tool::projFromUVToXYZ(Mat &rgb, Mat &dep, int index, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_)
 {
-    cd_.width = rgb.cols;
-    cd_.height = rgb.rows;
-    cd_.points.resize(cd_.width * cd_.height);
+    cd_->width = rgb.cols;
+    cd_->height = rgb.rows;
+    cd_->points.resize(cd_->width * cd_->height);
 
-    for(int i = 0; i < cd_.height; ++i)
+    for(int i = 0; i < cd_->height; ++i)
     {
-        for(int j = 0; j < cd_.width; ++j)
+        for(int j = 0; j < cd_->width; ++j)
         {
             double zc = getPixelActualDepth(dep.at<cv::Vec3b>(i,j)[0]); // actual depth
             int u = j;
@@ -411,13 +496,13 @@ void Tool::projFromUVToXYZ(Mat &rgb, Mat &dep, int index, pcl::PointCloud<pcl::P
             Vector4d X_;
             X_ = p_in*x_;
 
-            cd_.points[i*cd_.width+j].x = X_(0);
-            cd_.points[i*cd_.width+j].y = X_(1);
-            cd_.points[i*cd_.width+j].z = X_(2);
+            cd_->points[i*cd_->width+j].x = X_(0);
+            cd_->points[i*cd_->width+j].y = X_(1);
+            cd_->points[i*cd_->width+j].z = X_(2);
 
-            cd_.points[i*cd_.width+j].r = rgb.at<cv::Vec3b>(i,j)[2];
-            cd_.points[i*cd_.width+j].g = rgb.at<cv::Vec3b>(i,j)[1];
-            cd_.points[i*cd_.width+j].b = rgb.at<cv::Vec3b>(i,j)[0];
+            cd_->points[i*cd_->width+j].r = rgb.at<cv::Vec3b>(i,j)[2];
+            cd_->points[i*cd_->width+j].g = rgb.at<cv::Vec3b>(i,j)[1];
+            cd_->points[i*cd_->width+j].b = rgb.at<cv::Vec3b>(i,j)[0];
 
         }
 
@@ -435,15 +520,15 @@ void Tool::projFromUVToXYZ(Mat &rgb, Mat &dep, int index, pcl::PointCloud<pcl::P
  *
  **/
 
-void Tool::projFromUVToXYZ( Mat &dep, int index, pcl::PointCloud<pcl::PointXYZ> &cd_)
+void Tool::projFromUVToXYZ( Mat &dep, int index, pcl::PointCloud<pcl::PointXYZ>::Ptr cd_)
 {
-    cd_.width = dep.cols;
-    cd_.height = dep.rows;
-    cd_.points.resize(cd_.width * cd_.height);
+    cd_->width = dep.cols;
+    cd_->height = dep.rows;
+    cd_->points.resize(cd_->width * cd_->height);
 
-    for(int i = 0; i < cd_.height; ++i)
+    for(int i = 0; i < cd_->height; ++i)
     {
-        for(int j = 0; j < cd_.width; ++j)
+        for(int j = 0; j < cd_->width; ++j)
         {
             double zc = getPixelActualDepth(dep.at<cv::Vec3b>(i,j)[0]); // actual depth
             int u = j;
@@ -454,9 +539,9 @@ void Tool::projFromUVToXYZ( Mat &dep, int index, pcl::PointCloud<pcl::PointXYZ> 
             Vector4d X_;
             X_ = p_in*x_;
 
-            cd_.points[i*cd_.width+j].x = X_(0);
-            cd_.points[i*cd_.width+j].y = X_(1);
-            cd_.points[i*cd_.width+j].z = X_(2);
+            cd_->points[i*cd_->width+j].x = X_(0);
+            cd_->points[i*cd_->width+j].y = X_(1);
+            cd_->points[i*cd_->width+j].z = X_(2);
 
         }
 
@@ -471,10 +556,9 @@ void Tool::projFromUVToXYZ( Mat &dep, int index, pcl::PointCloud<pcl::PointXYZ> 
  *  output: rgb, dep
  */
 // this function  not use
-void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB> &cd_, Eigen::Matrix4d & targetP, Mat &rgb, Mat &dep)
+void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_, Eigen::Matrix4d & targetP, Mat &rgb, Mat &dep)
 
 {
-
     // here you need to initial rgb and depth first since not all the pixel in these two image will be fixed.
 
     if(targetP.cols()!=4 || targetP.rows()!=4)
@@ -484,17 +568,20 @@ void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB> &cd_, Eigen::Matrix
         // initial rgb and depth
         // TODO
 
-        rgb = Mat::zeros(cd_.height,cd_.width,CV_8UC3);
-        dep = Mat::zeros(cd_.height,cd_.width,CV_8UC1);
+        cout << "1" <<endl;
 
-        for(int i = 0; i < cd_.height; ++i)
+        rgb = Mat::zeros(cd_->height,cd_->width,CV_8UC3);
+        dep = Mat::zeros(cd_->height,cd_->width,CV_8UC1);
+
+        for(int i = 0; i < cd_->height; ++i)
         {
-            for(int j = 0 ; j < cd_.width; ++j)
+            for(int j = 0 ; j < cd_->width; ++j)
             {
+                cout << "2" <<endl;
                 Vector4d X_;
-                X_(0) = cd_.points[i*cd_.width+j].x;
-                X_(1) = cd_.points[i*cd_.width+j].y;
-                X_(2) = cd_.points[i*cd_.width+j].z; // actual depth
+                X_(0) = cd_->points[i*cd_->width+j].x;
+                X_(1) = cd_->points[i*cd_->width+j].y;
+                X_(2) = cd_->points[i*cd_->width+j].z; // actual depth
                 X_(3) = 1.0;
 
                 double zc = X_(2);
@@ -506,13 +593,14 @@ void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB> &cd_, Eigen::Matrix
                     continue;
                 }
 
-                rgb.at<cv::Vec3b>(int(x_(1)/zc),int(x_(0)/zc))[0] = cd_.points[i*cd_.width+j].b;
-                rgb.at<cv::Vec3b>(int(x_(1)/zc),int(x_(0)/zc))[1] = cd_.points[i*cd_.width+j].g;
-                rgb.at<cv::Vec3b>(int(x_(1)/zc),int(x_(0)/zc))[2] = cd_.points[i*cd_.width+j].r;
+                rgb.at<cv::Vec3b>(int(x_(1)/zc),int(x_(0)/zc))[0] = cd_->points[i*cd_->width+j].b;
+                rgb.at<cv::Vec3b>(int(x_(1)/zc),int(x_(0)/zc))[1] = cd_->points[i*cd_->width+j].g;
+                rgb.at<cv::Vec3b>(int(x_(1)/zc),int(x_(0)/zc))[2] = cd_->points[i*cd_->width+j].r;
 
                 dep.at<uchar>(int(x_(1)/zc),int(x_(0)/zc)) = getPixelDepth(zc);
             }
         }
+        cout << "leave" <<endl;
     }
 
 }
@@ -528,7 +616,7 @@ void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB> &cd_, Eigen::Matrix
  *   only depth image
  */
 
-void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZ> &cd_,
+void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZ>::Ptr cd_,
                            Eigen::Matrix4d & targetP,
                            Mat &dep,
                            std::vector<cv::Point>& vir_link_ori)
@@ -544,16 +632,16 @@ void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZ> &cd_,
         // TODO
 
         vir_link_ori.clear();
-        dep = Mat::zeros(cd_.height,cd_.width,CV_8UC1);
+        dep = Mat::zeros(cd_->height,cd_->width,CV_8UC1);
 
-        for(int i = 0; i < cd_.height; ++i)
+        for(int i = 0; i < cd_->height; ++i)
         {
-            for(int j = 0 ; j < cd_.width; ++j)
+            for(int j = 0 ; j < cd_->width; ++j)
             {
                 Vector4d X_;
-                X_(0) = cd_.points[i*cd_.width+j].x;
-                X_(1) = cd_.points[i*cd_.width+j].y;
-                X_(2) = cd_.points[i*cd_.width+j].z; // actual depth
+                X_(0) = cd_->points[i*cd_->width+j].x;
+                X_(1) = cd_->points[i*cd_->width+j].y;
+                X_(2) = cd_->points[i*cd_->width+j].z; // actual depth
                 X_(3) = 1.0;
 
                 double zc = X_(2);
