@@ -284,8 +284,8 @@ void Tool::rendering(vector<int> &img_id, Matrix4d& targetP )
     Mat left_d = cali[img_id[0]].dep;
     Mat right_d = cali[img_id[1]].dep;
 
-    Mat vir_depth = Mat::zeros(left_d.cols,left_d.rows,CV_8UC1); // depth image in novel viewpoint
-    Mat vir_rgb = Mat::zeros(left_d.cols,left_d.rows,CV_8UC3);   // rgb image in novel viewpoint
+    Mat vir_depth = Mat::zeros(left_d.rows,left_d.cols,CV_8UC1); // depth image in novel viewpoint
+    Mat vir_rgb = Mat::zeros(left_d.rows,left_d.cols,CV_8UC3);   // rgb image in novel viewpoint
 
     Mat left_r = cali[img_id[0]].rgb;
     Mat right_r = cali[img_id[1]].rgb;
@@ -349,6 +349,9 @@ void Tool::rendering(vector<int> &img_id, Matrix4d& targetP )
     fusingRgb(left_r,left_d,left_vir_link_orig, left_T,
               right_r,right_d,right_vir_link_orig, right_T,
               vir_rgb, target_T );
+
+    addWeighted(vir_rgb,0.5,cali[4].rgb,0.5,0,vir_rgb);
+//    imshow("target",cali[4].rgb);
 
     imshow("vir_rgb",vir_rgb);
     waitKey(0);

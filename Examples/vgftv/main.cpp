@@ -33,6 +33,10 @@ int main(int argc, char ** argv)
 
     tool.loadImage(path,camID);// image's startIndex = 0, endIndex = 1 defaultly
 
+    std::vector<int> tg;
+    tg.push_back(4);
+    tool.loadImage(path,tg);
+
     /**
      *  from UV to XYZ , show me pcl_viewer
      *
@@ -92,7 +96,6 @@ int main(int argc, char ** argv)
     Matrix4d target_P = tool.cali[4].mP;
 
     tool.rendering(camID,target_P);
-
 
     return 0;
 }
