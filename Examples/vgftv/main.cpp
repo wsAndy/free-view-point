@@ -11,6 +11,7 @@ void test(Tool& );
 
 int main(int argc, char ** argv)
 {
+
     int camera_num = 8;
     Tool tool; // Tool tool("ballet",8);
 
@@ -31,11 +32,11 @@ int main(int argc, char ** argv)
     camID.push_back(3);
     camID.push_back(5);
 
-    tool.loadImage(path,camID);// image's startIndex = 0, endIndex = 1 defaultly
+    tool.loadImage(path,camID,75,76);// image's startIndex = 0, endIndex = 1 defaultly . < 100
 
     std::vector<int> tg;
     tg.push_back(4);
-    tool.loadImage(path,tg);
+    tool.loadImage(path,tg,75,76);
 
     /**
      *  from UV to XYZ , show me pcl_viewer

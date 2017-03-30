@@ -80,6 +80,9 @@ public:
     // fusing two depth image in novel view point image plane
     void fusingDepth(Mat& left, Mat& right, Mat& target);
 
+    // smooth depth image
+    void smoothDepth(Mat& dep);
+
     //fusing two rgb image
     void fusingRgb(Mat& left_rgb, Mat& left_dep, vector<cv::Point2i>& left_vir_link_orig, Matrix<double,3,1>& left_T,
                    Mat& right_rgb, Mat& right_dep, vector<cv::Point2i>& right_vir_link_orig, Matrix<double,3,1>& right_T,
