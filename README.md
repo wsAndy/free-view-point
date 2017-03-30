@@ -19,3 +19,10 @@ The dataset is download from [here](https://download.microsoft.com/download/6/F/
 attention
 -----
 The core process is slow and the algorithm is still a navie one without any accelerate.
+
+
+how to use
+---
+1. build : in `free-view-point`, use `./build.sh`
+2. run : in `free-view-point/Example/vgftv/` use `./ftv`
+

@@ -316,13 +316,16 @@ void Tool::rendering(vector<int> &img_id, Matrix4d& targetP )
     std::vector<cv::Point2i> left_vir_link_orig; // used to link pixels in origin image to those pixels in virtual image plane
 
     projFromUVToXYZ(left_d,img_id[0],tmp_l_cd);
-    projFromXYZToUV(tmp_l_cd,targetP,left_vir_d,left_vir_link_orig);
+    projFromXYZToUV(tmp_l_cd, targetP, left_vir_d, left_vir_link_orig);
 
     Mat right_vir_d = Mat::zeros(left_d.rows, left_d.cols,CV_8UC1); // right project to virtual depth image
     std::vector<cv::Point2i> right_vir_link_orig; // used to link pixels in origin image to those pixels in virtual image plane
 
     projFromUVToXYZ(right_d,img_id[1],tmp_r_cd);
-    projFromXYZToUV(tmp_r_cd,targetP,right_vir_d,right_vir_link_orig);
+    projFromXYZToUV(tmp_r_cd, targetP, right_vir_d, right_vir_link_orig);
+
+    imwrite("/home/sheng/Desktop/left_vir.png",left_vir_d);
+    imwrite("/home/sheng/Desktop/right_vir.png",right_vir_d);
 
     smoothDepth(left_vir_d);
     smoothDepth(right_vir_d);
@@ -396,6 +399,8 @@ void Tool::fusingRgb(Mat &left_rgb, Mat &left_dep, vector<Point2i> &left_vir_lin
 
     double alpha = (sub_L)/(sub_L + sub_R);
 
+    cout << "alpha: " << alpha << endl;
+
 //    target_rgb = cv::Mat::zeros(left_rgb.rows,left_rgb.cols,CV_8UC3);
 
     for(int i = 0; i < left_rgb.rows; ++i)
@@ -455,14 +460,11 @@ void Tool::fusingDepth(Mat &left_, Mat &right_, Mat &target)
 
         cout << "in depth fusing." <<endl;
 
-//        target = Mat::zeros(left.rows,left.cols,CV_8UC1); // fuck ??!!!
-
         int count = 0;
         for(int i = 0; i < left_.rows; ++i)
         {
             for(int j = 0; j < left_.cols; ++j)
             {
-
                 if (left_.at<uchar>(i,j) < 0.5 && right_.at<uchar>(i,j) < 0.5)
                 { // both not have value
 
