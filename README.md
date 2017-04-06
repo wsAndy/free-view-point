@@ -26,3 +26,6 @@ how to use
 1. build : in `free-view-point`, use `./build.sh`
 2. run : in `free-view-point/Example/vgftv/` use `./ftv`
 
+Problem
+---
+Maybe I could use homography... in the recent codes, the whole transform operation are implemented by 2D and 3D project.
