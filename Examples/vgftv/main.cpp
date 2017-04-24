@@ -44,12 +44,11 @@ int main(int argc, char ** argv)
      *  TODO
      *
      * **/
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_p( new pcl::PointCloud<pcl::PointXYZRGB>);
 
-//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_p( new pcl::PointCloud<pcl::PointXYZRGB>);
+    tool.projFromUVToXYZ(tool.cali[camID[0]].rgb,tool.cali[camID[0]].dep,camID[0],cd_p);
 
-//    tool.projFromUVToXYZ(tool.cali[camID[0]].rgb,tool.cali[camID[0]].dep,camID[0],cd_p);
-
-//    tool.showPointCloud(cd_p);
+    tool.showPointCloud(cd_p);
 
     /**
      *  from XYZ to UV , show me the image

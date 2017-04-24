@@ -35,7 +35,7 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The program to use to edit the cache.
-CMAKE_EDIT_COMMAND = /usr/bin/cmake-gui
+CMAKE_EDIT_COMMAND = /usr/bin/ccmake
 
 # The top-level source directory on which CMake was run.
 CMAKE_SOURCE_DIR = /home/sheng/free-view-point
@@ -87,6 +87,12 @@ ftv_EXTERNAL_OBJECTS =
 ../Examples/vgftv/ftv: ../lib/libfree-view-point.so
 ../Examples/vgftv/ftv: /usr/local/lib/libopencv_videostab.so.2.4.13
 ../Examples/vgftv/ftv: /usr/local/lib/libopencv_ts.a
+../Examples/vgftv/ftv: /usr/lib/x86_64-linux-gnu/libGLU.so
+../Examples/vgftv/ftv: /usr/lib/x86_64-linux-gnu/libGL.so
+../Examples/vgftv/ftv: /usr/lib/x86_64-linux-gnu/libSM.so
+../Examples/vgftv/ftv: /usr/lib/x86_64-linux-gnu/libICE.so
+../Examples/vgftv/ftv: /usr/lib/x86_64-linux-gnu/libX11.so
+../Examples/vgftv/ftv: /usr/lib/x86_64-linux-gnu/libXext.so
 ../Examples/vgftv/ftv: /usr/local/lib/libopencv_superres.so.2.4.13
 ../Examples/vgftv/ftv: /usr/local/lib/libopencv_stitching.so.2.4.13
 ../Examples/vgftv/ftv: /usr/local/lib/libopencv_contrib.so.2.4.13
@@ -126,58 +132,60 @@ ftv_EXTERNAL_OBJECTS =
 ../Examples/vgftv/ftv: /usr/lib/x86_64-linux-gnu/libboost_date_time.so
 ../Examples/vgftv/ftv: /usr/lib/x86_64-linux-gnu/libboost_iostreams.so
 ../Examples/vgftv/ftv: /usr/lib/x86_64-linux-gnu/libboost_serialization.so
+../Examples/vgftv/ftv: /usr/lib/x86_64-linux-gnu/libboost_chrono.so
 ../Examples/vgftv/ftv: /usr/lib/x86_64-linux-gnu/libpthread.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_common.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_common.so
 ../Examples/vgftv/ftv: /usr/lib/x86_64-linux-gnu/libflann_cpp_s.a
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_kdtree.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_octree.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_search.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_sample_consensus.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_filters.so
-../Examples/vgftv/ftv: /usr/lib/libOpenNI.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_io.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_features.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_ml.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_segmentation.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_keypoints.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_kdtree.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_octree.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_search.so
 ../Examples/vgftv/ftv: /usr/lib/x86_64-linux-gnu/libqhull.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_surface.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_registration.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_recognition.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_visualization.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_people.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_outofcore.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_stereo.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_tracking.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_surface.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_sample_consensus.so
+../Examples/vgftv/ftv: /usr/lib/libOpenNI.so
+../Examples/vgftv/ftv: /usr/lib/libOpenNI2.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_io.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_filters.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_features.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_keypoints.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_registration.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_segmentation.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_recognition.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_visualization.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_people.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_outofcore.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_tracking.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_apps.so
 ../Examples/vgftv/ftv: /usr/lib/x86_64-linux-gnu/libboost_system.so
 ../Examples/vgftv/ftv: /usr/lib/x86_64-linux-gnu/libboost_filesystem.so
 ../Examples/vgftv/ftv: /usr/lib/x86_64-linux-gnu/libboost_thread.so
 ../Examples/vgftv/ftv: /usr/lib/x86_64-linux-gnu/libboost_date_time.so
 ../Examples/vgftv/ftv: /usr/lib/x86_64-linux-gnu/libboost_iostreams.so
 ../Examples/vgftv/ftv: /usr/lib/x86_64-linux-gnu/libboost_serialization.so
+../Examples/vgftv/ftv: /usr/lib/x86_64-linux-gnu/libboost_chrono.so
 ../Examples/vgftv/ftv: /usr/lib/x86_64-linux-gnu/libpthread.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_common.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_common.so
 ../Examples/vgftv/ftv: /usr/lib/x86_64-linux-gnu/libflann_cpp_s.a
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_kdtree.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_octree.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_search.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_sample_consensus.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_filters.so
-../Examples/vgftv/ftv: /usr/lib/libOpenNI.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_io.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_features.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_ml.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_segmentation.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_keypoints.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_kdtree.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_octree.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_search.so
 ../Examples/vgftv/ftv: /usr/lib/x86_64-linux-gnu/libqhull.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_surface.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_registration.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_recognition.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_visualization.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_people.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_outofcore.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_stereo.so
-../Examples/vgftv/ftv: /usr/local/lib/libpcl_tracking.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_surface.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_sample_consensus.so
+../Examples/vgftv/ftv: /usr/lib/libOpenNI.so
+../Examples/vgftv/ftv: /usr/lib/libOpenNI2.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_io.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_filters.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_features.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_keypoints.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_registration.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_segmentation.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_recognition.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_visualization.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_people.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_outofcore.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_tracking.so
+../Examples/vgftv/ftv: /usr/lib/libpcl_apps.so
 ../Examples/vgftv/ftv: CMakeFiles/ftv.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --red --bold "Linking CXX executable ../Examples/vgftv/ftv"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/ftv.dir/link.txt --verbose=$(VERBOSE)

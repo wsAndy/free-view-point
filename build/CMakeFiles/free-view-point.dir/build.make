@@ -35,7 +35,7 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The program to use to edit the cache.
-CMAKE_EDIT_COMMAND = /usr/bin/cmake-gui
+CMAKE_EDIT_COMMAND = /usr/bin/ccmake
 
 # The top-level source directory on which CMake was run.
 CMAKE_SOURCE_DIR = /home/sheng/free-view-point
@@ -134,15 +134,18 @@ free__view__point_EXTERNAL_OBJECTS =
 ../lib/libfree-view-point.so: /usr/lib/x86_64-linux-gnu/libboost_date_time.so
 ../lib/libfree-view-point.so: /usr/lib/x86_64-linux-gnu/libboost_iostreams.so
 ../lib/libfree-view-point.so: /usr/lib/x86_64-linux-gnu/libboost_serialization.so
+../lib/libfree-view-point.so: /usr/lib/x86_64-linux-gnu/libboost_chrono.so
 ../lib/libfree-view-point.so: /usr/lib/x86_64-linux-gnu/libpthread.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_common.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_common.so
 ../lib/libfree-view-point.so: /usr/lib/x86_64-linux-gnu/libflann_cpp_s.a
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_kdtree.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_octree.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_search.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_sample_consensus.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_filters.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_kdtree.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_octree.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_search.so
+../lib/libfree-view-point.so: /usr/lib/x86_64-linux-gnu/libqhull.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_surface.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_sample_consensus.so
 ../lib/libfree-view-point.so: /usr/lib/libOpenNI.so
+../lib/libfree-view-point.so: /usr/lib/libOpenNI2.so
 ../lib/libfree-view-point.so: /usr/lib/libvtkCommon.so.5.8.0
 ../lib/libfree-view-point.so: /usr/lib/libvtkFiltering.so.5.8.0
 ../lib/libfree-view-point.so: /usr/lib/libvtkImaging.so.5.8.0
@@ -158,29 +161,29 @@ free__view__point_EXTERNAL_OBJECTS =
 ../lib/libfree-view-point.so: /usr/lib/libvtkGeovis.so.5.8.0
 ../lib/libfree-view-point.so: /usr/lib/libvtkViews.so.5.8.0
 ../lib/libfree-view-point.so: /usr/lib/libvtkCharts.so.5.8.0
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_io.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_features.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_ml.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_segmentation.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_keypoints.so
-../lib/libfree-view-point.so: /usr/lib/x86_64-linux-gnu/libqhull.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_surface.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_registration.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_recognition.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_visualization.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_people.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_outofcore.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_stereo.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_tracking.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_io.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_filters.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_features.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_keypoints.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_registration.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_segmentation.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_recognition.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_visualization.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_people.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_outofcore.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_tracking.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_apps.so
 ../lib/libfree-view-point.so: /usr/lib/x86_64-linux-gnu/libboost_system.so
 ../lib/libfree-view-point.so: /usr/lib/x86_64-linux-gnu/libboost_filesystem.so
 ../lib/libfree-view-point.so: /usr/lib/x86_64-linux-gnu/libboost_thread.so
 ../lib/libfree-view-point.so: /usr/lib/x86_64-linux-gnu/libboost_date_time.so
 ../lib/libfree-view-point.so: /usr/lib/x86_64-linux-gnu/libboost_iostreams.so
 ../lib/libfree-view-point.so: /usr/lib/x86_64-linux-gnu/libboost_serialization.so
+../lib/libfree-view-point.so: /usr/lib/x86_64-linux-gnu/libboost_chrono.so
 ../lib/libfree-view-point.so: /usr/lib/x86_64-linux-gnu/libpthread.so
 ../lib/libfree-view-point.so: /usr/lib/x86_64-linux-gnu/libqhull.so
 ../lib/libfree-view-point.so: /usr/lib/libOpenNI.so
+../lib/libfree-view-point.so: /usr/lib/libOpenNI2.so
 ../lib/libfree-view-point.so: /usr/lib/x86_64-linux-gnu/libflann_cpp_s.a
 ../lib/libfree-view-point.so: /usr/lib/libvtkCommon.so.5.8.0
 ../lib/libfree-view-point.so: /usr/lib/libvtkFiltering.so.5.8.0
@@ -197,6 +200,12 @@ free__view__point_EXTERNAL_OBJECTS =
 ../lib/libfree-view-point.so: /usr/lib/libvtkGeovis.so.5.8.0
 ../lib/libfree-view-point.so: /usr/lib/libvtkViews.so.5.8.0
 ../lib/libfree-view-point.so: /usr/lib/libvtkCharts.so.5.8.0
+../lib/libfree-view-point.so: /usr/lib/x86_64-linux-gnu/libGLU.so
+../lib/libfree-view-point.so: /usr/lib/x86_64-linux-gnu/libGL.so
+../lib/libfree-view-point.so: /usr/lib/x86_64-linux-gnu/libSM.so
+../lib/libfree-view-point.so: /usr/lib/x86_64-linux-gnu/libICE.so
+../lib/libfree-view-point.so: /usr/lib/x86_64-linux-gnu/libX11.so
+../lib/libfree-view-point.so: /usr/lib/x86_64-linux-gnu/libXext.so
 ../lib/libfree-view-point.so: /usr/local/lib/libopencv_nonfree.so.2.4.13
 ../lib/libfree-view-point.so: /usr/local/lib/libopencv_ocl.so.2.4.13
 ../lib/libfree-view-point.so: /usr/local/lib/libopencv_gpu.so.2.4.13
@@ -211,25 +220,24 @@ free__view__point_EXTERNAL_OBJECTS =
 ../lib/libfree-view-point.so: /usr/local/lib/libopencv_imgproc.so.2.4.13
 ../lib/libfree-view-point.so: /usr/local/lib/libopencv_flann.so.2.4.13
 ../lib/libfree-view-point.so: /usr/local/lib/libopencv_core.so.2.4.13
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_common.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_kdtree.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_octree.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_search.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_sample_consensus.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_filters.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_io.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_features.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_ml.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_segmentation.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_keypoints.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_surface.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_registration.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_recognition.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_visualization.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_people.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_outofcore.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_stereo.so
-../lib/libfree-view-point.so: /usr/local/lib/libpcl_tracking.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_common.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_kdtree.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_octree.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_search.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_surface.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_sample_consensus.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_io.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_filters.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_features.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_keypoints.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_registration.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_segmentation.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_recognition.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_visualization.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_people.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_outofcore.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_tracking.so
+../lib/libfree-view-point.so: /usr/lib/libpcl_apps.so
 ../lib/libfree-view-point.so: /usr/lib/libvtkViews.so.5.8.0
 ../lib/libfree-view-point.so: /usr/lib/libvtkInfovis.so.5.8.0
 ../lib/libfree-view-point.so: /usr/lib/libvtkWidgets.so.5.8.0

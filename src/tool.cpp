@@ -523,9 +523,12 @@ void Tool::projFromUVToXYZ(Mat &rgb, Mat &dep, int index, pcl::PointCloud<pcl::P
     {
         for(int j = 0; j < cd_->width; ++j)
         {
+
             double zc = getPixelActualDepth(dep.at<cv::Vec3b>(i,j)[0]); // actual depth
             int u = j;
             int v = i;
+
+//            cout << "depth: " << zc <<endl;
 
             Matrix4d p_in = (cali[index].mP).inverse();
             Vector4d x_(zc*u,zc*v,zc,1);

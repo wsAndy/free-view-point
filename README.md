@@ -28,4 +28,5 @@ how to use
 
 Problem
 ---
-Maybe I could use homography... in the recent codes, the whole transform operation are implemented by 2D and 3D project.
+I guess function `projFromUVToXYZ` and function `projFromXYZtoUV` are wrong.
+
