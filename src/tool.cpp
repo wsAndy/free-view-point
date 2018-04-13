@@ -174,43 +174,43 @@ void Tool::loadImage(string& campath, vector<int>& camID, int startIndex, int en
  *    input: pcl::Ptr
  */
 
-void Tool::showPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cd_p)
-{
-    if(cd_p->size() == 0)
-    {
-        cout << "cloud point is empty." <<endl;
-    }else{
-        // although the origin in viewer is not set and the scale is not correct,
-        // it not influence the project pixles in target virtual image plane.
+//void Tool::showPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cd_p)
+//{
+//    if(cd_p->size() == 0)
+//    {
+//        cout << "cloud point is empty." <<endl;
+//    }else{
+//        // although the origin in viewer is not set and the scale is not correct,
+//        // it not influence the project pixles in target virtual image plane.
 
-        boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer1
-                (new pcl::visualization::PCLVisualizer("XYZ")); // viewer ID
+//        boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer1
+//                (new pcl::visualization::PCLVisualizer("XYZ")); // viewer ID
 
-        viewer1->addPointCloud<pcl::PointXYZ>(cd_p,"XYZ"); // cloud ID
-        viewer1->addCoordinateSystem(1.0);
-//        viewer1->initCameraParameters();
+//        viewer1->addPointCloud<pcl::PointXYZ>(cd_p,"XYZ"); // cloud ID
+//        viewer1->addCoordinateSystem(1.0);
+////        viewer1->initCameraParameters();
 
-        viewer1->spin();
-    }
-}
+//        viewer1->spin();
+//    }
+//}
 
-void Tool::showPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_p)
-{
-    if(cd_p->size() == 0)
-    {
-        cout << "cloud point is empty." <<endl;
-    }else{
-        boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer1
-                (new pcl::visualization::PCLVisualizer("XYZRGB")); // viewer ID
+//void Tool::showPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_p)
+//{
+//    if(cd_p->size() == 0)
+//    {
+//        cout << "cloud point is empty." <<endl;
+//    }else{
+//        boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer1
+//                (new pcl::visualization::PCLVisualizer("XYZRGB")); // viewer ID
 
-        viewer1->addPointCloud<pcl::PointXYZRGB>(cd_p,"XYZRGB"); // cloud ID
-        viewer1->addCoordinateSystem(1);
-//        viewer1->setCameraPosition();
-//        viewer1->initCameraParameters();
+//        viewer1->addPointCloud<pcl::PointXYZRGB>(cd_p,"XYZRGB"); // cloud ID
+//        viewer1->addCoordinateSystem(1);
+////        viewer1->setCameraPosition();
+////        viewer1->initCameraParameters();
 
-        viewer1->spin();
-    }
-}
+//        viewer1->spin();
+//    }
+//}
 
 
 /**
@@ -301,8 +301,8 @@ void Tool::rendering(vector<int> &img_id, Matrix4d& targetP )
 
     // point cloud's point is link to image's pixel , which has the same index.!!!
     // which makes `vir_link_ori` more easier.
-    pcl::PointCloud<pcl::PointXYZ>::Ptr tmp_l_cd( new pcl::PointCloud<pcl::PointXYZ>);
-    pcl::PointCloud<pcl::PointXYZ>::Ptr tmp_r_cd( new pcl::PointCloud<pcl::PointXYZ>);
+//    pcl::PointCloud<pcl::PointXYZ>::Ptr tmp_l_cd( new pcl::PointCloud<pcl::PointXYZ>);
+//    pcl::PointCloud<pcl::PointXYZ>::Ptr tmp_r_cd( new pcl::PointCloud<pcl::PointXYZ>);
 
 
     /**
@@ -315,14 +315,14 @@ void Tool::rendering(vector<int> &img_id, Matrix4d& targetP )
     Mat left_vir_d = Mat::zeros(left_d.rows, left_d.cols,CV_8UC1); // left project to virtual depth image.
     std::vector<cv::Point2i> left_vir_link_orig; // used to link pixels in origin image to those pixels in virtual image plane
 
-    projFromUVToXYZ(left_d,img_id[0],tmp_l_cd);
-    projFromXYZToUV(tmp_l_cd, targetP, left_vir_d, left_vir_link_orig);
+//    projFromUVToXYZ(left_d,img_id[0],tmp_l_cd);
+//    projFromXYZToUV(tmp_l_cd, targetP, left_vir_d, left_vir_link_orig);
 
     Mat right_vir_d = Mat::zeros(left_d.rows, left_d.cols,CV_8UC1); // right project to virtual depth image
     std::vector<cv::Point2i> right_vir_link_orig; // used to link pixels in origin image to those pixels in virtual image plane
 
-    projFromUVToXYZ(right_d,img_id[1],tmp_r_cd);
-    projFromXYZToUV(tmp_r_cd, targetP, right_vir_d, right_vir_link_orig);
+//    projFromUVToXYZ(right_d,img_id[1],tmp_r_cd);
+//    projFromXYZToUV(tmp_r_cd, targetP, right_vir_d, right_vir_link_orig);
 
     imwrite("/home/sheng/Desktop/left_vir.png",left_vir_d);
     imwrite("/home/sheng/Desktop/right_vir.png",right_vir_d);
@@ -513,41 +513,41 @@ void Tool::fusingDepth(Mat &left_, Mat &right_, Mat &target)
  *  output: cd_
  **/
 // this input dep is Vec3b ! not uchar
-void Tool::projFromUVToXYZ(Mat &rgb, Mat &dep, int index, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_)
-{
-    cd_->width = rgb.cols;
-    cd_->height = rgb.rows;
-    cd_->points.resize(cd_->width * cd_->height);
+//void Tool::projFromUVToXYZ(Mat &rgb, Mat &dep, int index, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_)
+//{
+//    cd_->width = rgb.cols;
+//    cd_->height = rgb.rows;
+//    cd_->points.resize(cd_->width * cd_->height);
 
-    for(int i = 0; i < cd_->height; ++i)
-    {
-        for(int j = 0; j < cd_->width; ++j)
-        {
+//    for(int i = 0; i < cd_->height; ++i)
+//    {
+//        for(int j = 0; j < cd_->width; ++j)
+//        {
 
-            double zc = getPixelActualDepth(dep.at<cv::Vec3b>(i,j)[0]); // actual depth
-            int u = j;
-            int v = i;
+//            double zc = getPixelActualDepth(dep.at<cv::Vec3b>(i,j)[0]); // actual depth
+//            int u = j;
+//            int v = i;
 
-//            cout << "depth: " << zc <<endl;
+////            cout << "depth: " << zc <<endl;
 
-            Matrix4d p_in = (cali[index].mP).inverse();
-            Vector4d x_(zc*u,zc*v,zc,1);
-            Vector4d X_;
-            X_ = p_in*x_;
+//            Matrix4d p_in = (cali[index].mP).inverse();
+//            Vector4d x_(zc*u,zc*v,zc,1);
+//            Vector4d X_;
+//            X_ = p_in*x_;
 
-            cd_->points[i*cd_->width+j].x = X_(0);
-            cd_->points[i*cd_->width+j].y = X_(1);
-            cd_->points[i*cd_->width+j].z = X_(2);
+//            cd_->points[i*cd_->width+j].x = X_(0);
+//            cd_->points[i*cd_->width+j].y = X_(1);
+//            cd_->points[i*cd_->width+j].z = X_(2);
 
-            cd_->points[i*cd_->width+j].r = rgb.at<cv::Vec3b>(i,j)[2];
-            cd_->points[i*cd_->width+j].g = rgb.at<cv::Vec3b>(i,j)[1];
-            cd_->points[i*cd_->width+j].b = rgb.at<cv::Vec3b>(i,j)[0];
+//            cd_->points[i*cd_->width+j].r = rgb.at<cv::Vec3b>(i,j)[2];
+//            cd_->points[i*cd_->width+j].g = rgb.at<cv::Vec3b>(i,j)[1];
+//            cd_->points[i*cd_->width+j].b = rgb.at<cv::Vec3b>(i,j)[0];
 
-        }
+//        }
 
-    }
+//    }
 
-}
+//}
 
 
 /**
@@ -559,34 +559,34 @@ void Tool::projFromUVToXYZ(Mat &rgb, Mat &dep, int index, pcl::PointCloud<pcl::P
  *
  **/
 
-void Tool::projFromUVToXYZ( Mat &dep, int index, pcl::PointCloud<pcl::PointXYZ>::Ptr cd_)
-{
-    cd_->width = dep.cols;
-    cd_->height = dep.rows;
-    cd_->points.resize(cd_->width * cd_->height);
+//void Tool::projFromUVToXYZ( Mat &dep, int index, pcl::PointCloud<pcl::PointXYZ>::Ptr cd_)
+//{
+//    cd_->width = dep.cols;
+//    cd_->height = dep.rows;
+//    cd_->points.resize(cd_->width * cd_->height);
 
-    for(int i = 0; i < cd_->height; ++i)
-    {
-        for(int j = 0; j < cd_->width; ++j)
-        {
-            double zc = getPixelActualDepth(dep.at<cv::Vec3b>(i,j)[0]); // actual depth
-            int u = j;
-            int v = i;
+//    for(int i = 0; i < cd_->height; ++i)
+//    {
+//        for(int j = 0; j < cd_->width; ++j)
+//        {
+//            double zc = getPixelActualDepth(dep.at<cv::Vec3b>(i,j)[0]); // actual depth
+//            int u = j;
+//            int v = i;
 
-            Matrix4d p_in = (cali[index].mP).inverse();
-            Vector4d x_(zc*u,zc*v,zc,1);
-            Vector4d X_;
-            X_ = p_in*x_;
+//            Matrix4d p_in = (cali[index].mP).inverse();
+//            Vector4d x_(zc*u,zc*v,zc,1);
+//            Vector4d X_;
+//            X_ = p_in*x_;
 
-            cd_->points[i*cd_->width+j].x = X_(0);
-            cd_->points[i*cd_->width+j].y = X_(1);
-            cd_->points[i*cd_->width+j].z = X_(2);
+//            cd_->points[i*cd_->width+j].x = X_(0);
+//            cd_->points[i*cd_->width+j].y = X_(1);
+//            cd_->points[i*cd_->width+j].z = X_(2);
 
-        }
+//        }
 
-    }
+//    }
 
-}
+//}
 
 /**
  *  project from XYZ (3D world coordinate) to UV (image coordinate)
@@ -595,61 +595,61 @@ void Tool::projFromUVToXYZ( Mat &dep, int index, pcl::PointCloud<pcl::PointXYZ>:
  *  output: rgb, dep
  */
 
-void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_,
-                           Eigen::Matrix4d & targetP,
-                           Mat &rgb, Mat &dep,
-                           std::vector<cv::Point>& vir_link_ori)
-{
-    // here you need to initial rgb and depth first since not all the pixel in these two image will be fixed.
+//void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_,
+//                           Eigen::Matrix4d & targetP,
+//                           Mat &rgb, Mat &dep,
+//                           std::vector<cv::Point>& vir_link_ori)
+//{
+//    // here you need to initial rgb and depth first since not all the pixel in these two image will be fixed.
 
-    if(targetP.cols()!=4 || targetP.rows()!=4)
-    {
-        cerr << " targetP is not a [4x4] matrix!" <<endl;
-    }else{
-        // initial rgb and depth
-        // TODO
+//    if(targetP.cols()!=4 || targetP.rows()!=4)
+//    {
+//        cerr << " targetP is not a [4x4] matrix!" <<endl;
+//    }else{
+//        // initial rgb and depth
+//        // TODO
 
-        cout << "XYZRGB project UV .." <<endl;
+//        cout << "XYZRGB project UV .." <<endl;
 
-        rgb = Mat::zeros(cd_->height,cd_->width,CV_8UC3);
-        dep = Mat::zeros(cd_->height,cd_->width,CV_8UC1);
+//        rgb = Mat::zeros(cd_->height,cd_->width,CV_8UC3);
+//        dep = Mat::zeros(cd_->height,cd_->width,CV_8UC1);
 
-        for(int i = 0; i < cd_->height; ++i)
-        {
-            for(int j = 0 ; j < cd_->width; ++j)
-            {
-                Vector4d X_;
-                X_(0) = cd_->points[i*cd_->width+j].x;
-                X_(1) = cd_->points[i*cd_->width+j].y;
-                X_(2) = cd_->points[i*cd_->width+j].z; // actual depth
-                X_(3) = 1.0;
+//        for(int i = 0; i < cd_->height; ++i)
+//        {
+//            for(int j = 0 ; j < cd_->width; ++j)
+//            {
+//                Vector4d X_;
+//                X_(0) = cd_->points[i*cd_->width+j].x;
+//                X_(1) = cd_->points[i*cd_->width+j].y;
+//                X_(2) = cd_->points[i*cd_->width+j].z; // actual depth
+//                X_(3) = 1.0;
 
-                double zc = X_(2);
-                Vector4d x_;
-                x_ = targetP*X_;
+//                double zc = X_(2);
+//                Vector4d x_;
+//                x_ = targetP*X_;
 
-                if(zc < 0.2) // important in test.
-                {
-                    vir_link_ori.push_back(Point(-1,-1));
-                    continue;
-                }
-                if(x_(0) < 0 || x_(1) < 0)
-                {
-                    vir_link_ori.push_back(Point(-1,-1));
-                    continue;
-                }
+//                if(zc < 0.2) // important in test.
+//                {
+//                    vir_link_ori.push_back(Point(-1,-1));
+//                    continue;
+//                }
+//                if(x_(0) < 0 || x_(1) < 0)
+//                {
+//                    vir_link_ori.push_back(Point(-1,-1));
+//                    continue;
+//                }
 
-                rgb.at<cv::Vec3b>(int(x_(1)/zc),int(x_(0)/zc))[0] = cd_->points[i*cd_->width+j].b;
-                rgb.at<cv::Vec3b>(int(x_(1)/zc),int(x_(0)/zc))[1] = cd_->points[i*cd_->width+j].g;
-                rgb.at<cv::Vec3b>(int(x_(1)/zc),int(x_(0)/zc))[2] = cd_->points[i*cd_->width+j].r;
+//                rgb.at<cv::Vec3b>(int(x_(1)/zc),int(x_(0)/zc))[0] = cd_->points[i*cd_->width+j].b;
+//                rgb.at<cv::Vec3b>(int(x_(1)/zc),int(x_(0)/zc))[1] = cd_->points[i*cd_->width+j].g;
+//                rgb.at<cv::Vec3b>(int(x_(1)/zc),int(x_(0)/zc))[2] = cd_->points[i*cd_->width+j].r;
 
-                dep.at<uchar>(int(x_(1)/zc),int(x_(0)/zc)) = getPixelDepth(zc);
-            }
-        }
-        cout << "XYZRGB project to UV .. OK" <<endl;
-    }
+//                dep.at<uchar>(int(x_(1)/zc),int(x_(0)/zc)) = getPixelDepth(zc);
+//            }
+//        }
+//        cout << "XYZRGB project to UV .. OK" <<endl;
+//    }
 
-}
+//}
 
 
 
@@ -662,70 +662,70 @@ void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_,
  *   only depth image
  */
 
-void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZ>::Ptr cd_,
-                           Eigen::Matrix4d & targetP,
-                           Mat &dep,
-                           std::vector<cv::Point>& vir_link_ori)
-{
+//void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZ>::Ptr cd_,
+//                           Eigen::Matrix4d & targetP,
+//                           Mat &dep,
+//                           std::vector<cv::Point>& vir_link_ori)
+//{
 
-    // here you need to initial rgb and depth first since not all the pixel in these two image will be fixed.
+//    // here you need to initial rgb and depth first since not all the pixel in these two image will be fixed.
 
-    if(targetP.cols()!=4 || targetP.rows()!=4)
-    {
-        cerr << " targetP is not a [4x4] matrix!" <<endl;
-    }else{
-        // initial depth
-        // TODO
+//    if(targetP.cols()!=4 || targetP.rows()!=4)
+//    {
+//        cerr << " targetP is not a [4x4] matrix!" <<endl;
+//    }else{
+//        // initial depth
+//        // TODO
 
-        // here, you should not clear it if it is empty.
-        if(!vir_link_ori.empty())
-        {
-            vir_link_ori.clear();
-        }
+//        // here, you should not clear it if it is empty.
+//        if(!vir_link_ori.empty())
+//        {
+//            vir_link_ori.clear();
+//        }
 
-        cout << "Start project XYZ to UV.." <<endl;
-        for(int i = 0; i < cd_->height; ++i)
-        {
-            for(int j = 0 ; j < cd_->width; ++j)
-            {
-                Vector4d X_;
-                X_(0) = cd_->points[i*cd_->width+j].x;
-                X_(1) = cd_->points[i*cd_->width+j].y;
-                X_(2) = cd_->points[i*cd_->width+j].z; // actual depth
-                X_(3) = 1.0;
+//        cout << "Start project XYZ to UV.." <<endl;
+//        for(int i = 0; i < cd_->height; ++i)
+//        {
+//            for(int j = 0 ; j < cd_->width; ++j)
+//            {
+//                Vector4d X_;
+//                X_(0) = cd_->points[i*cd_->width+j].x;
+//                X_(1) = cd_->points[i*cd_->width+j].y;
+//                X_(2) = cd_->points[i*cd_->width+j].z; // actual depth
+//                X_(3) = 1.0;
 
-                double zc = X_(2);
-                Vector4d x_;
-                x_ = targetP*X_;
+//                double zc = X_(2);
+//                Vector4d x_;
+//                x_ = targetP*X_;
 
-                // these judge operate is every important !!!!
-                // since the program will not stop if you locate a wide-point.
-                // especially the third one.
-                if(zc < 0.2) // important in test.
-                {
-                    vir_link_ori.push_back(Point(-1,-1));
-                    continue;
-                }
+//                // these judge operate is every important !!!!
+//                // since the program will not stop if you locate a wide-point.
+//                // especially the third one.
+//                if(zc < 0.2) // important in test.
+//                {
+//                    vir_link_ori.push_back(Point(-1,-1));
+//                    continue;
+//                }
 
-                if(x_(0) < 0 || x_(1) < 0)
-                {
-                    vir_link_ori.push_back(Point(-1,-1));
-                    continue;
-                }
+//                if(x_(0) < 0 || x_(1) < 0)
+//                {
+//                    vir_link_ori.push_back(Point(-1,-1));
+//                    continue;
+//                }
 
-                if( int(x_(1)/zc) >= dep.rows || int(x_(0)/zc) >= dep.cols)
-                {
-                    vir_link_ori.push_back(Point(-1,-1));
-                    continue;
-                }
+//                if( int(x_(1)/zc) >= dep.rows || int(x_(0)/zc) >= dep.cols)
+//                {
+//                    vir_link_ori.push_back(Point(-1,-1));
+//                    continue;
+//                }
 
-                dep.at<uchar>(int(x_(1)/zc),int(x_(0)/zc)) = getPixelDepth(zc);
+//                dep.at<uchar>(int(x_(1)/zc),int(x_(0)/zc)) = getPixelDepth(zc);
 
-                vir_link_ori.push_back(Point(int(x_(0)/zc),int(x_(1)/zc)));
-            }
-        }
+//                vir_link_ori.push_back(Point(int(x_(0)/zc),int(x_(1)/zc)));
+//            }
+//        }
 
-        cout << "XYZ project to UV .. OK" << endl;
-    }
+//        cout << "XYZ project to UV .. OK" << endl;
+//    }
 
-}
+//}

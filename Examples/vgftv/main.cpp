@@ -44,11 +44,11 @@ int main(int argc, char ** argv)
      *  TODO
      *
      * **/
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_p( new pcl::PointCloud<pcl::PointXYZRGB>);
+//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_p( new pcl::PointCloud<pcl::PointXYZRGB>);
 
-    tool.projFromUVToXYZ(tool.cali[camID[0]].rgb,tool.cali[camID[0]].dep,camID[0],cd_p);
+//    tool.projFromUVToXYZ(tool.cali[camID[0]].rgb,tool.cali[camID[0]].dep,camID[0],cd_p);
 
-    tool.showPointCloud(cd_p);
+//    tool.showPointCloud(cd_p);
 
     /**
      *  from XYZ to UV , show me the image
@@ -101,40 +101,40 @@ int main(int argc, char ** argv)
 }
 
 
-void test(Tool& tool)
-{
-    Matrix4d P;
-    for(int i = 0;i <4;++i)
-    {
-        for(int j = 0 ; j < 4;++j)
-        {
-            P(i,j) = i*4+j;
-        }
-    }
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd( new pcl::PointCloud<pcl::PointXYZRGB>);
-    cd->width = 200;
-    cd->height = 100;
-    cd->resize(cd->width * cd->height);
+//void test(Tool& tool)
+//{
+//    Matrix4d P;
+//    for(int i = 0;i <4;++i)
+//    {
+//        for(int j = 0 ; j < 4;++j)
+//        {
+//            P(i,j) = i*4+j;
+//        }
+//    }
+//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd( new pcl::PointCloud<pcl::PointXYZRGB>);
+//    cd->width = 200;
+//    cd->height = 100;
+//    cd->resize(cd->width * cd->height);
 
-    for(int i = 0 ; i < cd->height; ++i)
-    {
-        for(int j = 0; j < cd->width; ++j)
-        {
-            cd->points[i*cd->width+j].x = 1024 * rand()/ (RAND_MAX+1.0f);
-            cd->points[i*cd->width+j].y = 1024 * rand()/ (RAND_MAX+1.0f);
-            cd->points[i*cd->width+j].z = 1024 * rand()/ (RAND_MAX+1.0f);
-        }
-    }
+//    for(int i = 0 ; i < cd->height; ++i)
+//    {
+//        for(int j = 0; j < cd->width; ++j)
+//        {
+//            cd->points[i*cd->width+j].x = 1024 * rand()/ (RAND_MAX+1.0f);
+//            cd->points[i*cd->width+j].y = 1024 * rand()/ (RAND_MAX+1.0f);
+//            cd->points[i*cd->width+j].z = 1024 * rand()/ (RAND_MAX+1.0f);
+//        }
+//    }
 
-    Mat rgb;
-    Mat depth;
+//    Mat rgb;
+//    Mat depth;
 
-    std::vector<cv::Point> tmp_vv;
-    tool.projFromXYZToUV(cd,P,rgb,depth,tmp_vv);
+//    std::vector<cv::Point> tmp_vv;
+//    tool.projFromXYZToUV(cd,P,rgb,depth,tmp_vv);
 
-    imshow("rgb",rgb);
-    imshow("depth",depth);
+//    imshow("rgb",rgb);
+//    imshow("depth",depth);
 
-    waitKey(0);
+//    waitKey(0);
 
-}
+//}

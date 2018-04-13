@@ -9,16 +9,16 @@
 #include "vector"
 #include "string"
 
-#include "pcl/point_types.h"
-#include "pcl/io/pcd_io.h"
-#include "pcl/visualization/cloud_viewer.h"
-#include "pcl/visualization/boost.h"
+//#include "pcl/point_types.h"
+//#include "pcl/io/pcd_io.h"
+//#include "pcl/visualization/cloud_viewer.h"
+//#include "pcl/visualization/boost.h"
 
 #include "opencv2/opencv.hpp"
-#include "opencv2/core/eigen.hpp"
+//#include "opencv2/core/eigen.hpp"
 
-#include "Eigen/Dense"
-#include "Eigen/Core"
+#include "eigen3/Eigen/Dense"
+#include "eigen3/Eigen/Core"
 
 using namespace cv;
 using namespace std;
@@ -59,9 +59,9 @@ public:
     void loadImage(string& campath, vector<int>& camID, int startIndex = 0, int endIndex = 1);
 
     //show pointcloud
-    void showPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cd_p);
+//    void showPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cd_p);
 
-    void showPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_p);
+//    void showPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_p);
 
     void showParameter();
 
@@ -96,15 +96,15 @@ public:
 
     // infact , I think this two function should be operate in one function.
     // project from UV to XYZ
-    void projFromUVToXYZ( Mat& rgb, Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd);
+//    void projFromUVToXYZ( Mat& rgb, Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd);
 
-    void projFromUVToXYZ( Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZ>::Ptr cd);
+//    void projFromUVToXYZ( Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZ>::Ptr cd);
 
     // project from XYZ to UV, since you need to project the pointcloud to a visual image plane
-    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd, Matrix4d &targetP, Mat& rgb, Mat& dep, std::vector<cv::Point>& vir_link_ori);
+//    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd, Matrix4d &targetP, Mat& rgb, Mat& dep, std::vector<cv::Point>& vir_link_ori);
 
-    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZ>::Ptr cd, Matrix4d &targetP, Mat& dep
-                          , std::vector<cv::Point>& vir_link_ori);
+//    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZ>::Ptr cd, Matrix4d &targetP, Mat& dep
+//                          , std::vector<cv::Point>& vir_link_ori);
 
 
 
