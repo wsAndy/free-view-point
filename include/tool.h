@@ -29,95 +29,124 @@ using namespace Eigen;
 // and it might not work well for video stream since there is no accelerate or multi-thread.
 namespace fvv_tool
 {
+    struct point{
+        int r,g,b;
+        double x,y,z;
+    };
+    struct pointcloud{
+      int height;
+      int width;
+      vector<point> pl;
+    };
 
-        struct ImageFrame{
-		double mK[3][3];
-		double mR[3][3];
-		double mT[3];
+    struct ImageFrame{
 
-                Matrix4d mP;
-                // mP=[mK*mR mK*mT ]
-                //    [ 0      1   ]
+        double mK[3][3];
+        double mR[3][3];
+        double mT[3];
 
-                // Z*x=mP*X
+        Matrix3d K;
+        Matrix4d RT;
+        Matrix4d mP;
+        // mP=[mK*mR mK*mT ]
+        //    [ 0      1   ]
 
-                Mat rgb;
-                Mat dep;
-        };
+        // Z*x=mP*X
 
-class Tool
-{
-public:
-    Tool();
-    Tool(string dataset_name, int num);
-    ~Tool();
+        vector<Mat> rgb_vec;
+        vector<Mat> dep_vec; // 该值是世界坐标系的深度
+//        vector<Mat> xyt_vec;
+        vector<pointcloud> pl_vec; // 在世界坐标系中的值
 
-    // operate *cali ;
-    void loadImageParameter(char* file_name);
+        vector<int> src_id; // 在目标位置用于标记是原图编号
+    };
 
-    // load one image
-    void loadImage(string& campath, vector<int>& camID, int startIndex = 0, int endIndex = 1);
+    class Tool
+    {
+    public:
+        Tool();
+        Tool(string dataset_name, int num);
+        ~Tool();
 
-    //show pointcloud
-//    void showPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cd_p);
+        // operate *cali ;
+        void loadImageParameter(char* file_name);
 
-//    void showPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_p);
+        // load one image
+        void loadImage(string& campath, vector<int>& camID, int startIndex = 0, int endIndex = 1);
 
-    void showParameter();
+        //show pointcloud
+    //    void showPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cd_p);
 
-    // generate mP
-    void generateP();
+    //    void showPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_p);
 
-    // convert depth image's pixel value to an actual one.
-    double getPixelActualDepth(unsigned char d);
+        void showParameter();
 
-    // convert depth to image pixel.
-    double getPixelDepth(double dw);
+        // generate mP
+        void generateP();
 
-    // rendering to novel viewpoint.
-    void rendering(vector<int>& img_id, Matrix4d& targetP);
+        // get cali
+        ImageFrame* getCamFrame();
 
-    // fusing two depth image in novel view point image plane
-    void fusingDepth(Mat& left, Mat& right, Mat& target);
+        // return K,RT,mP
+        void getParam(Eigen::Matrix4d& mP);
 
-    // smooth depth image
-    void smoothDepth(Mat& dep);
+        // convert depth image's pixel value to an actual one.
+        double getPixelActualDepth(unsigned char d);
 
-    //fusing two rgb image
-    void fusingRgb(Mat& left_rgb, Mat& left_dep, vector<cv::Point2i>& left_vir_link_orig, Matrix<double,3,1>& left_T,
-                   Mat& right_rgb, Mat& right_dep, vector<cv::Point2i>& right_vir_link_orig, Matrix<double,3,1>& right_T,
-                   Mat& target, Matrix<double,3,1>& target_T);
+        // convert depth to image pixel.
+        double getPixelDepth(double dw);
 
+        // rendering to novel viewpoint.
+        void rendering(vector<int>& img_id, Matrix4d& targetP);
 
-    // my god, in this paper, when we project depth or rgb image to a virtual image plane, rgb and depth
-    // is uncorrelation  !!!!
+        // fusing two depth image in novel view point image plane
+        void fusingDepth(Mat& left, Mat& right, Mat& target);
 
-    // maybe I should not use pcl and define a struct directly...
+        // smooth depth image
+        void smoothDepth(Mat& dep);
 
-    // infact , I think this two function should be operate in one function.
-    // project from UV to XYZ
-//    void projFromUVToXYZ( Mat& rgb, Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd);
-
-//    void projFromUVToXYZ( Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZ>::Ptr cd);
-
-    // project from XYZ to UV, since you need to project the pointcloud to a visual image plane
-//    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd, Matrix4d &targetP, Mat& rgb, Mat& dep, std::vector<cv::Point>& vir_link_ori);
-
-//    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZ>::Ptr cd, Matrix4d &targetP, Mat& dep
-//                          , std::vector<cv::Point>& vir_link_ori);
+        //fusing two rgb image
+        void fusingRgb(Mat& left_rgb, Mat& left_dep, vector<cv::Point2i>& left_vir_link_orig, Matrix<double,3,1>& left_T,
+                       Mat& right_rgb, Mat& right_dep, vector<cv::Point2i>& right_vir_link_orig, Matrix<double,3,1>& right_T,
+                       Mat& target, Matrix<double,3,1>& target_T);
 
 
+        // my god, in this paper, when we project depth or rgb image to a virtual image plane, rgb and depth
+        // is uncorrelation  !!!!
 
-    ImageFrame* cali;
+        // maybe I should not use pcl and define a struct directly...
 
-private:
-    int camera_num = 8;
-    int MaxZ = 120;
-    int MinZ = 44;
+        // infact , I think this two function should be operate in one function.
+        // project from UV to XYZ
+    //    void projFromUVToXYZ( Mat& rgb, Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd);
 
-    int THRESHOLD = 5;
+    //    void projFromUVToXYZ( Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZ>::Ptr cd);
 
-};
+        // project from XYZ to UV, since you need to project the pointcloud to a visual image plane
+    //    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd, Matrix4d &targetP, Mat& rgb, Mat& dep, std::vector<cv::Point>& vir_link_ori);
+
+    //    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZ>::Ptr cd, Matrix4d &targetP, Mat& dep
+    //                          , std::vector<cv::Point>& vir_link_ori);
+
+
+
+
+        // id: image id that project.
+        // startId: project which image from sequence? from 0 to  rgb_vec.size()-1
+        // endId:   project which image from sequence? from 0 to  rgb_vec.size()-1
+        void projUVtoXYZ(int id ,int startInd, int endInd);
+        void projXYZtoUV(int cam_id, int startInd, int endInd, ImageFrame& tar_img);
+        void writePLY(string name, pointcloud& pl);
+        ImageFrame* cali;
+
+    private:
+        int camera_num = 8;
+        int MaxZ = 120;
+        int MinZ = 44;
+
+        int THRESHOLD = 5;
+
+    };
 
 
 }

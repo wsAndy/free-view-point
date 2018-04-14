@@ -28,9 +28,330 @@ Tool::Tool(string dataset_name, int cam_num)
 
 Tool::~Tool()
 {
+    delete []cali;
     cout << "Tool clean" <<endl;
 }
 
+void Tool::writePLY(string name, pointcloud& pl)
+{
+    ofstream of(name,ios::out);
+
+    of << "ply" << endl;
+    of << "format ascii 1.0" << endl;
+    of << "element vertex " << pl.pl.size() << endl;
+    of << "property double x" << endl;
+    of << "property double y" << endl;
+    of << "property double z" << endl;
+    of << "property uint8 red" << endl;
+    of << "property uint8 green" << endl;
+    of << "property uint8 blue" << endl;
+    of << "end_header" << endl;
+    for(int i = 0; i < pl.pl.size(); ++i)
+    {
+        of << pl.pl[i].x << " "
+           << pl.pl[i].y << " "
+           << pl.pl[i].z << " "
+           << pl.pl[i].r << " "
+           << pl.pl[i].g << " "
+           << pl.pl[i].b << endl;
+    }
+
+    of.close();
+
+
+
+}
+void Tool::projUVtoXYZ(int id ,int startInd, int endInd)
+{
+    for(int i = startInd; i < endInd; ++i)
+    {
+        pointcloud pl_;
+        Mat dep = cali[id].dep_vec[i];
+        Mat rgb = cali[id].rgb_vec[i];
+
+        int height = dep.rows;
+        int width = dep.cols;
+        pl_.height = height;
+        pl_.width = width;
+
+        Matrix4d mp = cali[id].mP;
+
+        for(int v = 0; v < height; ++v)
+        {
+            for(int u = 0; u < width; ++u)
+            {
+                double c0, c1, c2;
+                double z = getPixelActualDepth(dep.at<Vec3b>(v,u)[0]);
+
+                c0 = z*mp(0,2) + mp(0,3);
+                c1 = z*mp(1,2) + mp(1,3);
+                c2 = z*mp(2,2) + mp(2,3);
+
+                double x,y;
+                y = u*( c1*mp(2,0) - c2*mp(1,0) )
+                        + v * (c2*mp(0,0)-c0*mp(2,0))
+                        + c0*mp(1,0) - c1*mp(0,0);
+                y/= v*( mp(2,0)*mp(0,1)-mp(2,1)*mp(0,0) )
+                        +u*(mp(1,0)*mp(2,1)-mp(1,1)*mp(2,0))
+                        +mp(0,0)*mp(1,1) - mp(1,0)*mp(0,1);
+                x = y*(mp(0,1)-u*mp(2,1)) + c0 - c2*u;
+                x/= mp(2,0)*u - mp(0,0);
+
+                point pp;
+                pp.x = x;
+                pp.y = y;
+                pp.z = z;
+
+                pp.r = rgb.at<cv::Vec3b>(v,u)[2];
+                pp.g = rgb.at<cv::Vec3b>(v,u)[1];
+                pp.b = rgb.at<cv::Vec3b>(v,u)[0];
+                pl_.pl.push_back(pp);
+// for debug
+//                if( v==250 && u == 300)
+//                {
+//                    cout << "in uv to xyz, x = " << x << ", y = " << y << ", z = " << z << endl;
+//                }
+            }
+        }
+        cali[id].pl_vec.push_back(pl_);
+    }
+
+}
+
+//
+/*
+void Tool::projUVtoXYZ(int id ,int startInd, int endInd)
+{
+    for(int i = startInd; i < endInd; ++i)
+    {
+        pointcloud pl_;
+        Mat dep = cali[id].dep_vec[i];
+        Mat rgb = cali[id].rgb_vec[i];
+
+        int height = dep.rows;
+        int width = dep.cols;
+        pl_.height = height;
+        pl_.width = width;
+
+        Matrix4d RT = cali[id].RT;
+        Matrix3d k_in = (cali[id].K).inverse();
+
+        for(int i = 0; i < height; ++i)
+        {
+            for(int j = 0; j < width; ++j)
+            {
+
+                double zw = getPixelActualDepth(dep.at<cv::Vec3b>(i,j)[0]); // 这个从dep图得到的z是世界坐标的值
+                // 所以先转化到目标位置
+
+                int u = j;
+                int v = i;
+                Vector3d uv_(u,v,1);
+                Vector3d xy_zc = k_in*uv_;
+
+                Matrix3d p_new;
+                p_new(0,0) = RT(0,0); p_new(0,1) = RT(0,1); p_new(0,2) = -1*xy_zc(0);
+                p_new(1,0) = RT(1,0); p_new(1,1) = RT(1,1); p_new(1,2) = -1*xy_zc(1);
+                p_new(2,0) = RT(2,0); p_new(2,1) = RT(2,1); p_new(2,2) = -1;
+                Vector3d B_;
+                B_(0) = -1*( RT(0,2)*zw + RT(0,3));
+                B_(1) = -1*( RT(1,2)*zw + RT(1,3));
+                B_(2) = -1*( RT(2,2)*zw + RT(2,3));
+
+//                cout << "zw = " << zw << endl;
+//                cout << "RT = " << RT << endl;
+//                cout << "p_new = " << p_new << endl;
+//                cout << "B_ = " << B_ << endl;
+//                cout << "========" << endl;
+                Vector3d XwYwZc;
+                XwYwZc = p_new.inverse() * B_;
+
+                point pp;
+                pp.x = XwYwZc(0);
+                pp.y = XwYwZc(1);
+                pp.z = zw;
+
+                pp.r = rgb.at<cv::Vec3b>(i,j)[2];
+                pp.g = rgb.at<cv::Vec3b>(i,j)[1];
+                pp.b = rgb.at<cv::Vec3b>(i,j)[0];
+                pl_.pl.push_back(pp);
+            }
+
+        }
+        cali[id].pl_vec.push_back(pl_);
+
+    }
+
+}
+*/
+
+
+// 这边这个投影并不是最终的，要注意这个问题其实挺多的，需要讲究
+// 这个target_img只对应一个源图像的投影的结果，对于多个源投影的结果，要有多个target_img
+void Tool::projXYZtoUV(int cam_id, int startInd, int endInd, ImageFrame& target_img)
+{
+    ImageFrame src_img = cali[cam_id];
+    Eigen::Matrix4d P = target_img.mP;
+    Eigen::Matrix4d RT = target_img.RT;
+    if(P.cols() != 4 || P.rows() !=4)
+    {
+        cerr << " targetP is not a [4x4] matrix!" <<endl;
+    }else{
+        cout << "project XYZ to UV start" <<endl;
+        for(int cam = startInd; cam < endInd; cam++)
+        {
+            pointcloud pl_ = src_img.pl_vec[cam];
+            int height = pl_.height;
+            int width = pl_.width;
+
+            Mat rgb_tar = Mat::zeros(height, width, CV_8UC3);
+            Mat dep_tar = Mat::zeros(height, width, CV_8UC3);
+
+
+            for(int i = 0; i < height; ++i)
+            {
+                for(int j = 0; j < width; ++j)
+                {
+                    double x,y,z,u,v,w;
+                    x = pl_.pl[i*width + j].x; // 这一些都是在世界坐标系中的值
+                    y = pl_.pl[i*width + j].y;
+                    z = pl_.pl[i*width + j].z;
+
+                    u = P(0,0)*x + P(0,1)*y + P(0,2)*z + P(0,3);
+                    v = P(1,0)*x + P(1,1)*y + P(1,2)*z + P(1,3);
+                    w = P(2,0)*x + P(2,1)*y + P(2,2)*z + P(2,3);
+
+                    u = u/w;
+                    v = v/w;
+
+                    // 这种投影一定有裂缝
+                    int row = round( v );
+                    int col = round( u );
+
+// for debug
+//                    if( i == 250 && j == 300)
+//                    {
+//                        cout << "x = " << x << ", y= " << y << " ,z = " << z << endl;
+//                        cout << u << "," << v << endl;
+//                        cout << "row = " << row << ", col = " << col << endl;
+//                    }
+
+                    if(row >= height || col >= width || row < 0 || col < 0)
+                    {
+                        continue;
+                    }
+                    if( dep_tar.at<cv::Vec3b>(row,col)[0] == 0 || dep_tar.at<cv::Vec3b>(row,col)[0] > getPixelDepth(w) )
+                    {
+                        dep_tar.at<cv::Vec3b>(row, col)[0] = getPixelDepth(w);
+                        dep_tar.at<cv::Vec3b>(row, col)[1] = getPixelDepth(w);
+                        dep_tar.at<cv::Vec3b>(row, col)[2] = getPixelDepth(w);
+
+                        rgb_tar.at<cv::Vec3b>(row,col)[0] = pl_.pl[i*width + j].b;
+                        rgb_tar.at<cv::Vec3b>(row,col)[1] = pl_.pl[i*width + j].g;
+                        rgb_tar.at<cv::Vec3b>(row,col)[2] = pl_.pl[i*width + j].r;
+//                        if( i == 250 && j == 300 )
+//                        {
+//                            rgb_tar.at<cv::Vec3b>(row,col)[0] = 0;
+//                            rgb_tar.at<cv::Vec3b>(row,col)[1] = 0;
+//                            rgb_tar.at<cv::Vec3b>(row,col)[2] = 255;
+//                            cout << "set! " << endl;
+//                        }
+                    }
+
+                }
+            }
+
+            target_img.rgb_vec.push_back(rgb_tar);
+            target_img.dep_vec.push_back(dep_tar);
+        }
+
+    }
+
+}
+
+
+
+
+
+
+/*
+// 这边这个投影并不是最终的，要注意这个问题其实挺多的，需要讲究
+// 这个target_img只对应一个源图像的投影的结果，对于多个源投影的结果，要有多个target_img
+void Tool::projXYZtoUV(int cam_id, int startInd, int endInd, ImageFrame& target_img)
+{
+    ImageFrame src_img = cali[cam_id];
+    Eigen::Matrix4d P = target_img.mP;
+    Eigen::Matrix4d RT = target_img.RT;
+    if(P.cols() != 4 || P.rows() !=4)
+    {
+        cerr << " targetP is not a [4x4] matrix!" <<endl;
+    }else{
+        cout << "project XYZ to UV start" <<endl;
+        for(int cam = startInd; cam < endInd; cam++)
+        {
+            pointcloud pl_ = src_img.pl_vec[cam];
+            int height = pl_.height;
+            int width = pl_.width;
+
+            Mat rgb_tar(height, width, CV_8UC3);
+            Mat dep_tar(height, width, CV_8UC1);
+
+            for(int i = 0; i < height; ++i)
+            {
+                for(int j = 0; j < width; ++j)
+                {
+
+                    Vector4d X_;
+                    X_(0) = pl_.pl[i*width + j].x; // 这一些都是在世界坐标系中的值
+                    X_(1) = pl_.pl[i*width + j].y;
+                    X_(2) = pl_.pl[i*width + j].z;
+                    X_(3) = 1.0;
+
+                    Vector4d tmp_x;
+                    tmp_x = RT*X_;
+                    double zc = tmp_x(2);
+
+                    Vector4d x_;
+                    x_ = P*X_;
+// 这边因当给出目前target位置的深度！！！！！！
+                    if(zc < 0.2)
+                    {
+                        // too close
+
+                        continue;
+                    }
+
+                    // 这种投影一定有裂缝
+                    int row = round( x_(1)/zc );
+                    int col = round( x_(0)/zc );
+
+                    if( i == 250 && j == 300)
+                    {
+                        cout << col << "," << row << endl;
+                    }
+
+                    if(row >= height || col >= width || row < 0 || col < 0)
+                    {
+                        continue;
+                    }
+
+                    dep_tar.at<uchar>(row, col) = (uchar) getPixelDepth(X_(2));
+                    rgb_tar.at<cv::Vec3b>(row,col)[0] = pl_.pl[i*width + j].b;
+                    rgb_tar.at<cv::Vec3b>(row,col)[1] = pl_.pl[i*width + j].g;
+                    rgb_tar.at<cv::Vec3b>(row,col)[2] = pl_.pl[i*width + j].r;
+
+
+                }
+            }
+
+            target_img.rgb_vec.push_back(rgb_tar);
+            target_img.dep_vec.push_back(dep_tar);
+        }
+
+    }
+
+}
+*/
 
 
 void Tool::showParameter()
@@ -40,24 +361,11 @@ void Tool::showParameter()
         cout << "-----------"<<endl;
         cout << "camera " << k <<endl;
         cout << "camera intrinsic = " << endl;
-        for(int i = 0; i < 3; ++i)
-        {
-            for(int j = 0; j < 3; ++j)
-            {
-                cout << cali[k].mK[i][j] << "  ";
-            }
-            cout << endl;
-        }
+        cout << cali[k].K << endl;
         cout << "camera Extrinsic = " << endl;
-        for(int i = 0; i< 3; ++i)
-        {
-            for(int j = 0; j < 3; ++j)
-            {
-                cout << cali[k].mR[i][j] << "  ";
-            }
-
-            cout << cali[k].mT[i] <<endl;
-        }
+        cout << cali[k].RT << endl;
+        cout << "camera  mP = " << endl;
+        cout << cali[k].mP << endl;
 
     }
 
@@ -130,6 +438,12 @@ void Tool::loadImageParameter(char* file_name)
 }
 
 
+ImageFrame* Tool::getCamFrame()
+{
+     return cali;
+}
+
+
 /**
  *   load one image( rgb and depth )
  *
@@ -156,8 +470,8 @@ void Tool::loadImage(string& campath, vector<int>& camID, int startIndex, int en
             ss >> dep_path;
             ss.clear();
 
-            cali[camID[i]].rgb = imread(color_path.c_str()); // here can only save one
-            cali[camID[i]].dep = imread(dep_path.c_str());   // here can only save one
+            cali[camID[i]].rgb_vec.push_back( imread(color_path.c_str()) ); // here can only save one
+            cali[camID[i]].dep_vec.push_back( imread(dep_path.c_str()) );   // here can only save one
 
             color_path.clear();
             dep_path.clear();
@@ -166,51 +480,6 @@ void Tool::loadImage(string& campath, vector<int>& camID, int startIndex, int en
     cout << "load Image OK" <<endl;
 }
 
-
-/**
- *
- *   show point cloud
- *
- *    input: pcl::Ptr
- */
-
-//void Tool::showPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cd_p)
-//{
-//    if(cd_p->size() == 0)
-//    {
-//        cout << "cloud point is empty." <<endl;
-//    }else{
-//        // although the origin in viewer is not set and the scale is not correct,
-//        // it not influence the project pixles in target virtual image plane.
-
-//        boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer1
-//                (new pcl::visualization::PCLVisualizer("XYZ")); // viewer ID
-
-//        viewer1->addPointCloud<pcl::PointXYZ>(cd_p,"XYZ"); // cloud ID
-//        viewer1->addCoordinateSystem(1.0);
-////        viewer1->initCameraParameters();
-
-//        viewer1->spin();
-//    }
-//}
-
-//void Tool::showPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_p)
-//{
-//    if(cd_p->size() == 0)
-//    {
-//        cout << "cloud point is empty." <<endl;
-//    }else{
-//        boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer1
-//                (new pcl::visualization::PCLVisualizer("XYZRGB")); // viewer ID
-
-//        viewer1->addPointCloud<pcl::PointXYZRGB>(cd_p,"XYZRGB"); // cloud ID
-//        viewer1->addCoordinateSystem(1);
-////        viewer1->setCameraPosition();
-////        viewer1->initCameraParameters();
-
-//        viewer1->spin();
-//    }
-//}
 
 
 /**
@@ -233,8 +502,10 @@ void Tool::generateP()
             }
             eg_mt(i) = cali[k].mT[i];
         }
+        cali[k].K = eg_mk;
 
-        Matrix4d eg_P;
+
+        Matrix4d eg_P, rt;
         eg_P.block<3,3>(0,0) = eg_mk*eg_mr;
         eg_P.block<3,1>(0,3) = eg_mk*eg_mt;
 
@@ -244,6 +515,15 @@ void Tool::generateP()
         eg_P(3,3) = 1.0;
 
         cali[k].mP = eg_P;
+
+        rt.block<3,3>(0,0) = eg_mr;
+        rt.block<3,1>(0,3) = eg_mt;
+        rt(3,0) = 0.0;
+        rt(3,1) = 0.0;
+        rt(3,2) = 0.0;
+        rt(3,3) = 1.0;
+        cali[k].RT = rt;
+
     }
 
     cout << "generate each camera's P, OK" <<endl;
@@ -277,96 +557,96 @@ double Tool::getPixelDepth(double dw)
     return 255.0*(MaxZ*MinZ)*(1.0/dw-1.0/MaxZ)/(MaxZ-MinZ);
 }
 
-void Tool::rendering(vector<int> &img_id, Matrix4d& targetP )
-{
-    // use two image
+//void Tool::rendering(vector<int> &img_id, Matrix4d& targetP )
+//{
+//    // use two image
 
-    Mat left_d = cali[img_id[0]].dep;
-    Mat right_d = cali[img_id[1]].dep;
+//    Mat left_d = cali[img_id[0]].dep;
+//    Mat right_d = cali[img_id[1]].dep;
 
-    Mat vir_depth = Mat::zeros(left_d.rows,left_d.cols,CV_8UC1); // depth image in novel viewpoint
-    Mat vir_rgb = Mat::zeros(left_d.rows,left_d.cols,CV_8UC3);   // rgb image in novel viewpoint
+//    Mat vir_depth = Mat::zeros(left_d.rows,left_d.cols,CV_8UC1); // depth image in novel viewpoint
+//    Mat vir_rgb = Mat::zeros(left_d.rows,left_d.cols,CV_8UC3);   // rgb image in novel viewpoint
 
-    Mat left_r = cali[img_id[0]].rgb;
-    Mat right_r = cali[img_id[1]].rgb;
+//    Mat left_r = cali[img_id[0]].rgb;
+//    Mat right_r = cali[img_id[1]].rgb;
 
-    Matrix<double,3,1> left_T;
-    Matrix<double,3,1> right_T;
-    Matrix<double,3,1> target_T;
+//    Matrix<double,3,1> left_T;
+//    Matrix<double,3,1> right_T;
+//    Matrix<double,3,1> target_T;
 
-    left_T = (cali[img_id[0]].mP).block(0,3,3,1);
-    right_T = (cali[img_id[1]].mP).block(0,3,3,1);
-    target_T = targetP.block(0,3,3,1);
-
-
-    // point cloud's point is link to image's pixel , which has the same index.!!!
-    // which makes `vir_link_ori` more easier.
-//    pcl::PointCloud<pcl::PointXYZ>::Ptr tmp_l_cd( new pcl::PointCloud<pcl::PointXYZ>);
-//    pcl::PointCloud<pcl::PointXYZ>::Ptr tmp_r_cd( new pcl::PointCloud<pcl::PointXYZ>);
+//    left_T = (cali[img_id[0]].mP).block(0,3,3,1);
+//    right_T = (cali[img_id[1]].mP).block(0,3,3,1);
+//    target_T = targetP.block(0,3,3,1);
 
 
-    /**
-     * project left depth image to virtual image plane
-     * project right depth image to virtual image plane
-     * fuseing these two depth images and get one.
-     *
-     **/
-
-    Mat left_vir_d = Mat::zeros(left_d.rows, left_d.cols,CV_8UC1); // left project to virtual depth image.
-    std::vector<cv::Point2i> left_vir_link_orig; // used to link pixels in origin image to those pixels in virtual image plane
-
-//    projFromUVToXYZ(left_d,img_id[0],tmp_l_cd);
-//    projFromXYZToUV(tmp_l_cd, targetP, left_vir_d, left_vir_link_orig);
-
-    Mat right_vir_d = Mat::zeros(left_d.rows, left_d.cols,CV_8UC1); // right project to virtual depth image
-    std::vector<cv::Point2i> right_vir_link_orig; // used to link pixels in origin image to those pixels in virtual image plane
-
-//    projFromUVToXYZ(right_d,img_id[1],tmp_r_cd);
-//    projFromXYZToUV(tmp_r_cd, targetP, right_vir_d, right_vir_link_orig);
-
-    imwrite("/home/sheng/Desktop/left_vir.png",left_vir_d);
-    imwrite("/home/sheng/Desktop/right_vir.png",right_vir_d);
-
-    smoothDepth(left_vir_d);
-    smoothDepth(right_vir_d);
-
-    fusingDepth(left_vir_d,right_vir_d,vir_depth);
-
-//    imwrite("/home/sheng/Desktop/result_dep_left.png",left_vir_d); // maybe the depth image is wrong.
-//    imwrite("/home/sheng/Desktop/result_dep_right.png",right_vir_d);
+//    // point cloud's point is link to image's pixel , which has the same index.!!!
+//    // which makes `vir_link_ori` more easier.
+////    pcl::PointCloud<pcl::PointXYZ>::Ptr tmp_l_cd( new pcl::PointCloud<pcl::PointXYZ>);
+////    pcl::PointCloud<pcl::PointXYZ>::Ptr tmp_r_cd( new pcl::PointCloud<pcl::PointXYZ>);
 
 
-    cout << "fusing depth over." <<endl;
+//    /**
+//     * project left depth image to virtual image plane
+//     * project right depth image to virtual image plane
+//     * fuseing these two depth images and get one.
+//     *
+//     **/
 
-    imwrite("/home/sheng/Desktop/result_dep1.png",vir_depth);
+//    Mat left_vir_d = Mat::zeros(left_d.rows, left_d.cols,CV_8UC1); // left project to virtual depth image.
+//    std::vector<cv::Point2i> left_vir_link_orig; // used to link pixels in origin image to those pixels in virtual image plane
 
-//    imshow("vir",vir_depth);
-//    waitKey(0);
+////    projFromUVToXYZ(left_d,img_id[0],tmp_l_cd);
+////    projFromXYZToUV(tmp_l_cd, targetP, left_vir_d, left_vir_link_orig);
 
-    // vir_depth  is already.
+//    Mat right_vir_d = Mat::zeros(left_d.rows, left_d.cols,CV_8UC1); // right project to virtual depth image
+//    std::vector<cv::Point2i> right_vir_link_orig; // used to link pixels in origin image to those pixels in virtual image plane
 
-    /**
-     *  reproject the pixel on virtual image plane to left image and right image
-     *  get its rgb values
-     *
-     */
+////    projFromUVToXYZ(right_d,img_id[1],tmp_r_cd);
+////    projFromXYZToUV(tmp_r_cd, targetP, right_vir_d, right_vir_link_orig);
 
-    // TODO
-    fusingRgb(left_r,left_vir_d,left_vir_link_orig, left_T,
-              right_r,right_vir_d,right_vir_link_orig, right_T,
-              vir_rgb, target_T );
+//    imwrite("/home/sheng/Desktop/left_vir.png",left_vir_d);
+//    imwrite("/home/sheng/Desktop/right_vir.png",right_vir_d);
 
-//    addWeighted(vir_rgb,0.5,cali[4].rgb,0.5,0,vir_rgb);
-//    imshow("target",cali[4].rgb);
+//    smoothDepth(left_vir_d);
+//    smoothDepth(right_vir_d);
 
-//    resize(vir_rgb,vir_rgb,Size(int(vir_rgb.cols/2),int(vir_rgb.rows/2)));
+//    fusingDepth(left_vir_d,right_vir_d,vir_depth);
 
-//    imshow("vir_rgb",vir_rgb);
-    imwrite("/home/sheng/Desktop/result1.png",vir_rgb);
-//    waitKey(0);
-    cout << "fusing rgb over." <<endl;
+////    imwrite("/home/sheng/Desktop/result_dep_left.png",left_vir_d); // maybe the depth image is wrong.
+////    imwrite("/home/sheng/Desktop/result_dep_right.png",right_vir_d);
 
-}
+
+//    cout << "fusing depth over." <<endl;
+
+//    imwrite("/home/sheng/Desktop/result_dep1.png",vir_depth);
+
+////    imshow("vir",vir_depth);
+////    waitKey(0);
+
+//    // vir_depth  is already.
+
+//    /**
+//     *  reproject the pixel on virtual image plane to left image and right image
+//     *  get its rgb values
+//     *
+//     */
+
+//    // TODO
+//    fusingRgb(left_r,left_vir_d,left_vir_link_orig, left_T,
+//              right_r,right_vir_d,right_vir_link_orig, right_T,
+//              vir_rgb, target_T );
+
+////    addWeighted(vir_rgb,0.5,cali[4].rgb,0.5,0,vir_rgb);
+////    imshow("target",cali[4].rgb);
+
+////    resize(vir_rgb,vir_rgb,Size(int(vir_rgb.cols/2),int(vir_rgb.rows/2)));
+
+////    imshow("vir_rgb",vir_rgb);
+//    imwrite("/home/sheng/Desktop/result1.png",vir_rgb);
+////    waitKey(0);
+//    cout << "fusing rgb over." <<endl;
+
+//}
 
 
 

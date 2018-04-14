@@ -57,3 +57,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/vgftv)
 add_executable(ftv
 Examples/vgftv/main.cpp)
 target_link_libraries(ftv ${PROJECT_NAME})
+
+add_executable( tt
+Examples/vgftv/tt.cpp)
+target_link_libraries(tt ${PROJECT_NAME})

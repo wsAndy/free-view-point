@@ -4,7 +4,7 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/Users/sheng/Desktop/free-view-point/Examples/vgftv/main.cpp" "/Users/sheng/Desktop/free-view-point/build/CMakeFiles/ftv.dir/Examples/vgftv/main.cpp.o"
+  "/Users/sheng/Desktop/free-view-point/Examples/vgftv/tt.cpp" "/Users/sheng/Desktop/free-view-point/build/CMakeFiles/tt.dir/Examples/vgftv/tt.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "Clang")
 

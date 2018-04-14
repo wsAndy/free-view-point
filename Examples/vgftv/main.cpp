@@ -11,18 +11,12 @@ void test(Tool& );
 
 int main(int argc, char ** argv)
 {
-
     int camera_num = 8;
     Tool tool; // Tool tool("ballet",8);
 
     char* path_parameter = "./../../dataset/MSR3DVideo-Breakdancers/calibParams-breakdancers.txt";
     tool.loadImageParameter(path_parameter);
-
-//    tool.showParameter();
-
     tool.generateP(); // after loadImageParameter, generate each image's P according to reference camera 4
-
-    // now each tool.cali[] has mP, cali[4]
 
     //load camera's image into tool.cali
     string path = "./../../dataset/MSR3DVideo-Breakdancers/cam";
@@ -31,12 +25,9 @@ int main(int argc, char ** argv)
 
     camID.push_back(3);
     camID.push_back(5);
+    camID.push_back(6);
 
-    tool.loadImage(path,camID,75,76);// image's startIndex = 0, endIndex = 1 defaultly . < 100
-
-    std::vector<int> tg;
-    tg.push_back(4);
-    tool.loadImage(path,tg,75,76);
+    tool.loadImage(path,camID,89,90);// image's startIndex = 0, endIndex = 1 defaultly . < 100
 
     /**
      *  from UV to XYZ , show me pcl_viewer
@@ -44,11 +35,13 @@ int main(int argc, char ** argv)
      *  TODO
      *
      * **/
-//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_p( new pcl::PointCloud<pcl::PointXYZRGB>);
 
-//    tool.projFromUVToXYZ(tool.cali[camID[0]].rgb,tool.cali[camID[0]].dep,camID[0],cd_p);
+    // 对0号相机的存储图像的[0,1)位置序列投影到XYZ中
+    tool.projUVtoXYZ(3,0,1); // 0,1 in vector id
+    tool.projUVtoXYZ(5,0,1);
+    tool.projUVtoXYZ(6,0,1);
+//    tool.writePLY("/Users/sheng/Desktop/free-view-point/pl3.ply",tool.cali[3].pl_vec[0]);
 
-//    tool.showPointCloud(cd_p);
 
     /**
      *  from XYZ to UV , show me the image
@@ -56,31 +49,26 @@ int main(int argc, char ** argv)
      *  TODO
      *
      */
-//    pcl::PointCloud<pcl::PointXYZ>::Ptr cd_p( new pcl::PointCloud<pcl::PointXYZ>);
+    // 设定目标位姿
+    ImageFrame* cali = tool.getCamFrame();
 
-//    tool.projFromUVToXYZ(tool.cali[camID[0]].rgb, tool.cali[camID[0]].dep,camID[0],cd_p);
+    ImageFrame target_img;
+    target_img.mP = cali[4].mP;
+    target_img.RT = cali[4].RT;
+//    tool.projXYZtoUV(3,0,1,target_img);
+    tool.projXYZtoUV(5,0,1,target_img);
+    tool.projXYZtoUV(6,0,1,target_img);
 
-//    Mat target_dep;
-//    std::vector<cv::Point> vir_link_ori;
-//    tool.projFromXYZToUV(cd_p,tool.cali[camID[1]].mP,target_dep,vir_link_ori);
+//    imwrite("/Users/sheng/Desktop/dep3.png",target_img.dep_vec[0]);
+    imwrite("/Users/sheng/Desktop/dep5.png",target_img.dep_vec[0]);
+    imwrite("/Users/sheng/Desktop/dep6.png",target_img.dep_vec[1]);
 
-//    imshow("dep",target_dep);
+//    imwrite("/Users/sheng/Desktop/rgb3.jpg", target_img.rgb_vec[0]);
+    imwrite("/Users/sheng/Desktop/rgb5.jpg", target_img.rgb_vec[0]);
+    imwrite("/Users/sheng/Desktop/rgb6.jpg", target_img.rgb_vec[1]);
 
-//    Mat ori_dep_img = tool.cali[camID[1]].dep;
-//    cvtColor(ori_dep_img,ori_dep_img,CV_BGR2GRAY);
-
-//    resize(target_dep,target_dep,Size(ori_dep_img.cols,ori_dep_img.rows));
-
-//    vector<Mat> output;
-//    output.push_back(ori_dep_img); // B
-//    output.push_back(Mat(Size(ori_dep_img.cols,ori_dep_img.rows),CV_8UC1));
-//    output.push_back(target_dep); // R
-
-//    Mat output_img;
-//    merge(output,output_img);
-
-//    imshow("fusing",output_img);
-
+//    imshow("ori", cali[4].rgb_vec[0]);
+//    imshow("4",target_img.rgb_vec[0]);
 //    waitKey(0);
 
 
@@ -95,7 +83,7 @@ int main(int argc, char ** argv)
 
     Matrix4d target_P = tool.cali[4].mP;
 
-    tool.rendering(camID,target_P);
+//    tool.rendering(camID,target_P);
 
     return 0;
 }
