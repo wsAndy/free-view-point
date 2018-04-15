@@ -63,6 +63,27 @@ void Tool::writePLY(string name, pointcloud& pl)
 }
 
 
+void Tool::projUVZtoXY(Eigen::Matrix4d &mp, double u, double v, double z, double *x, double *y, int height)
+{
+    double c0,c1,c2;
+    v = height - v - 1;
+
+    c0 = z*mp(0,2) + mp(0,3);
+    c1 = z*mp(1,2) + mp(1,3);
+    c2 = z*mp(2,2) + mp(2,3);
+
+
+    *y = u*( c1*mp(2,0) - c2*mp(1,0) )
+            + v * (c2*mp(0,0)-c0*mp(2,0))
+            + c0*mp(1,0) - c1*mp(0,0);
+    *y/= v*( mp(2,0)*mp(0,1)-mp(2,1)*mp(0,0) )
+            +u*(mp(1,0)*mp(2,1)-mp(1,1)*mp(2,0))
+            +mp(0,0)*mp(1,1) - mp(1,0)*mp(0,1);
+    *x = (*y)*(mp(0,1)-u*mp(2,1)) + c0 - c2*u;
+    *x/= mp(2,0)*u - mp(0,0);
+
+}
+
 void Tool::projUVtoXYZ(int id ,int startInd, int endInd)
 {
     for(int i = startInd; i < endInd; ++i)
@@ -115,22 +136,6 @@ void Tool::projUVtoXYZ(int id ,int startInd, int endInd)
                 pp.b = rgb.at<cv::Vec3b>(height -1- v, u)[0];
                 pl_.pl.push_back(pp);
 
-
-//                point pp;
-//                pp.x = x;
-//                pp.y = y;
-//                pp.z = z;
-
-//                pp.r = rgb.at<cv::Vec3b>(height -1- v, u)[2];
-//                pp.g = rgb.at<cv::Vec3b>(height -1- v, u)[1];
-//                pp.b = rgb.at<cv::Vec3b>(height -1- v, u)[0];
-//                pl_.pl.push_back(pp);
-//                // 此时，在点云图中，dep以及rgb刚好与真实的左右对称，但是投影之后的结果是没错的，但是在深度的前后上存在问题
-// for debug
-//                if( v==250 && u == 300)
-//                {
-//                    cout << "in uv to xyz, x = " << x << ", y = " << y << ", z = " << z << endl;
-//                }
             }
         }
         cali[id].pl_vec.push_back(pl_);
@@ -140,78 +145,22 @@ void Tool::projUVtoXYZ(int id ,int startInd, int endInd)
 
 
 
-//
 
-/*
-void Tool::projUVtoXYZ(int id ,int startInd, int endInd)  this function runs slowly
+double Tool::projXYZtoUV(Eigen::Matrix4d &P, double x, double y, double z, double *u, double *v, int height)
 {
-    for(int i = startInd; i < endInd; ++i)
-    {
-        pointcloud pl_;
-        Mat dep = cali[id].dep_vec[i];
-        Mat rgb = cali[id].rgb_vec[i];
+    double w;
 
-        int height = dep.rows;
-        int width = dep.cols;
-        pl_.height = height;
-        pl_.width = width;
+    *u = P(0,0)*x + P(0,1)*y + P(0,2)*z + P(0,3);
+    *v = P(1,0)*x + P(1,1)*y + P(1,2)*z + P(1,3);
+    w = P(2,0)*x + P(2,1)*y + P(2,2)*z + P(2,3);
 
-        Matrix4d RT = cali[id].RT;
-        Matrix3d k_in = (cali[id].K).inverse();
+    *u = *u/w;
+    *v = *v/w;
 
-        for(int i = 0; i < height; ++i)
-        {
-            for(int j = 0; j < width; ++j)
-            {
+    *v = height - *v - 1;
 
-                double zw = getPixelActualDepth(dep.at<cv::Vec3b>(i,j)[0]); // 这个从dep图得到的z是世界坐标的值
-                // 所以先转化到目标位置
-
-                int u = j;
-                int v = i;
-                Vector3d uv_(u,v,1);
-                Vector3d xy_zc = k_in*uv_;
-
-                Matrix3d p_new;
-                p_new(0,0) = RT(0,0); p_new(0,1) = RT(0,1); p_new(0,2) = -1*xy_zc(0);
-                p_new(1,0) = RT(1,0); p_new(1,1) = RT(1,1); p_new(1,2) = -1*xy_zc(1);
-                p_new(2,0) = RT(2,0); p_new(2,1) = RT(2,1); p_new(2,2) = -1;
-                Vector3d B_;
-                B_(0) = -1*( RT(0,2)*zw + RT(0,3));
-                B_(1) = -1*( RT(1,2)*zw + RT(1,3));
-                B_(2) = -1*( RT(2,2)*zw + RT(2,3));
-
-//                cout << "zw = " << zw << endl;
-//                cout << "RT = " << RT << endl;
-//                cout << "p_new = " << p_new << endl;
-//                cout << "B_ = " << B_ << endl;
-//                cout << "========" << endl;
-                Vector3d XwYwZc;
-                XwYwZc = p_new.inverse() * B_;
-
-                point pp;
-                pp.x = XwYwZc(0);
-                pp.y = XwYwZc(1);
-                pp.z = zw;
-
-                pp.r = rgb.at<cv::Vec3b>(i,j)[2];
-                pp.g = rgb.at<cv::Vec3b>(i,j)[1];
-                pp.b = rgb.at<cv::Vec3b>(i,j)[0];
-                pl_.pl.push_back(pp);
-                if( v==250 && u == 300)
-                {
-                    cout << "in uv to xyz, x = " << pp.x << ", y = " << pp.y << ", z = " << pp.z << endl;
-                }
-            }
-
-        }
-        cali[id].pl_vec.push_back(pl_);
-
-    }
-
+    return w;
 }
-*/
-
 
 // 这边这个投影并不是最终的，要注意这个问题其实挺多的，需要讲究
 // 这个target_img只对应一个源图像的投影的结果，对于多个源投影的结果，要有多个target_img
@@ -257,18 +206,18 @@ void Tool::projXYZtoUV(int cam_id, int startInd, int endInd, ImageFrame& target_
                     int col = round( u );
 
 // for debug
-                    if( i == 250 && j == 300)
-                    {
-                        cout << "x = " << x << ", y= " << y << " ,z = " << z << endl;
-                        cout << u << "," << v << endl;
-                        cout << "row = " << row << ", col = " << col << endl;
-                    }
+//                    if( i == 250 && j == 300)
+//                    {
+//                        cout << "x = " << x << ", y= " << y << " ,z = " << z << endl;
+//                        cout << u << "," << v << endl;
+//                        cout << "row = " << row << ", col = " << col << endl;
+//                    }
 
                     if(row >= height || col >= width || row < 0 || col < 0)
                     {
                         continue;
                     }
-                    if( dep_tar.at<cv::Vec3b>(row,col)[0] == 0 || dep_tar.at<cv::Vec3b>(row,col)[0] < getPixelDepth(w) )
+                    if( dep_tar.at<cv::Vec3b>(row,col)[0] == 0 || getPixelActualDepth( dep_tar.at<cv::Vec3b>(row,col)[0] ) >= w )
                     {
                         dep_tar.at<cv::Vec3b>(row, col)[0] = getPixelDepth(w);
                         dep_tar.at<cv::Vec3b>(row, col)[1] = getPixelDepth(w);
@@ -384,6 +333,56 @@ void Tool::loadImageParameter(char* file_name)
 ImageFrame* Tool::getCamFrame()
 {
      return cali;
+}
+
+void Tool::forwardwarp(int src_camid, int dst_camid)
+{
+
+
+    Mat srcimg = cali[src_camid].rgb_vec[0];
+    Mat depimg = cali[src_camid].dep_vec[0];
+    Matrix4d dst_mP = cali[dst_camid].mP;
+    Matrix4d src_mP = cali[src_camid].mP;
+    Mat rgbdst = Mat::zeros(srcimg.rows,srcimg.cols,CV_8UC3);
+    Mat depdst = Mat::zeros(srcimg.rows,srcimg.cols,CV_8UC3);
+
+    double x=0.0, y=0.0, z;
+    double dstu = 0.0, dstv = 0.0;
+    for(int i = 0; i < srcimg.rows; ++i)
+    {
+        for(int j = 0; j < srcimg.cols; ++j)
+        {
+            z = getPixelActualDepth(depimg.at<Vec3b>(i,j)[0]);
+            projUVZtoXY(src_mP, (double)j, (double)i,z, &x, &y, srcimg.rows);
+            projXYZtoUV(dst_mP,x,y,z,&dstu,&dstv, srcimg.rows);
+
+            int dstU = round(dstu);
+            int dstV = round(dstv);
+
+            if(dstU >= 0 && dstU < srcimg.cols && dstV >= 0 && dstV < srcimg.rows)
+            {
+
+                if(depdst.at<Vec3b>(dstV,dstU)[0] == 0 || getPixelActualDepth( depdst.at<Vec3b>(dstV,dstU)[0] ) >= z )
+                {
+                    depdst.at<Vec3b>(dstV,dstU)[0] = round(getPixelDepth(z));
+                    depdst.at<Vec3b>(dstV,dstU)[1] = round(getPixelDepth(z));
+                    depdst.at<Vec3b>(dstV,dstU)[2] = round(getPixelDepth(z));
+
+                    rgbdst.at<Vec3b>(dstV,dstU)[0] = srcimg.at<Vec3b>(i,j)[0];
+                    rgbdst.at<Vec3b>(dstV,dstU)[1] = srcimg.at<Vec3b>(i,j)[1];
+                    rgbdst.at<Vec3b>(dstV,dstU)[2] = srcimg.at<Vec3b>(i,j)[2];
+
+                }
+            }
+
+        }
+    }
+
+
+//    imwrite("/Users/sheng/Desktop/dep"+to_string(src_camid)+"_d.png", depdst);
+//    imwrite("/Users/sheng/Desktop/rgb"+to_string(src_camid)+"_d.jpg", rgbdst);
+
+
 }
 
 

@@ -30,14 +30,10 @@ int main(int argc, char ** argv)
 
     tool.loadImage(path,camID,75,76);// image's startIndex = 0, endIndex = 1 defaultly . < 100
 
-    /**
-     *  from UV to XYZ , show me pcl_viewer
-     *
-     *  TODO
-     *
-     * **/
+    // 这个是使用提供投影代码的测试
+//    tool.forwardwarp(3, 4);
+//    tool.forwardwarp(5, 4);
 
-    // 对0号相机的存储图像的[0,1)位置序列投影到XYZ中
     tool.projUVtoXYZ(0,0,1);
     tool.projUVtoXYZ(3,0,1); // 0,1 in vector id
     tool.projUVtoXYZ(5,0,1);
@@ -45,13 +41,6 @@ int main(int argc, char ** argv)
     tool.writePLY("/Users/sheng/Desktop/free-view-point/pl3.ply",tool.cali[3].pl_vec[0]);
     tool.writePLY("/Users/sheng/Desktop/free-view-point/pl5.ply",tool.cali[5].pl_vec[0]);
 
-
-    /**
-     *  from XYZ to UV , show me the image
-     *
-     *  TODO
-     *
-     */
     // 设定目标位姿
     ImageFrame* cali = tool.getCamFrame();
 
@@ -59,26 +48,13 @@ int main(int argc, char ** argv)
     target_img.mP = cali[4].mP;
     target_img.RT = cali[4].RT;
     tool.projXYZtoUV(3,0,1,target_img);
-
-//    target_img.mP = cali[4].mP;
-//    target_img.RT = cali[4].RT;
     tool.projXYZtoUV(5,0,1,target_img);
 
-//    target_img.mP = cali[5].mP;
-//    target_img.RT = cali[5].RT;
-//    tool.projXYZtoUV(0,0,1,target_img);
-
-//    imwrite("/Users/sheng/Desktop/dep3.png",target_img.dep_vec[0]);
     imwrite("/Users/sheng/Desktop/dep3.png",target_img.dep_vec[0]);
     imwrite("/Users/sheng/Desktop/dep5.png",target_img.dep_vec[1]);
 
-//    imwrite("/Users/sheng/Desktop/rgb3.jpg", target_img.rgb_vec[0]);
     imwrite("/Users/sheng/Desktop/rgb3.jpg", target_img.rgb_vec[0]);
     imwrite("/Users/sheng/Desktop/rgb5.jpg", target_img.rgb_vec[1]);
-
-//    imshow("ori", cali[4].rgb_vec[0]);
-//    imshow("4",target_img.rgb_vec[0]);
-//    waitKey(0);
 
 
     /**
@@ -96,42 +72,3 @@ int main(int argc, char ** argv)
 
     return 0;
 }
-
-
-//void test(Tool& tool)
-//{
-//    Matrix4d P;
-//    for(int i = 0;i <4;++i)
-//    {
-//        for(int j = 0 ; j < 4;++j)
-//        {
-//            P(i,j) = i*4+j;
-//        }
-//    }
-//    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd( new pcl::PointCloud<pcl::PointXYZRGB>);
-//    cd->width = 200;
-//    cd->height = 100;
-//    cd->resize(cd->width * cd->height);
-
-//    for(int i = 0 ; i < cd->height; ++i)
-//    {
-//        for(int j = 0; j < cd->width; ++j)
-//        {
-//            cd->points[i*cd->width+j].x = 1024 * rand()/ (RAND_MAX+1.0f);
-//            cd->points[i*cd->width+j].y = 1024 * rand()/ (RAND_MAX+1.0f);
-//            cd->points[i*cd->width+j].z = 1024 * rand()/ (RAND_MAX+1.0f);
-//        }
-//    }
-
-//    Mat rgb;
-//    Mat depth;
-
-//    std::vector<cv::Point> tmp_vv;
-//    tool.projFromXYZToUV(cd,P,rgb,depth,tmp_vv);
-
-//    imshow("rgb",rgb);
-//    imshow("depth",depth);
-
-//    waitKey(0);
-
-//}

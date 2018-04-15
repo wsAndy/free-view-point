@@ -58,7 +58,8 @@ namespace fvv_tool
 //        vector<Mat> xyt_vec;
         vector<pointcloud> pl_vec; // 在世界坐标系中的值
 
-        vector<int> src_id; // 在目标位置用于标记是原图编号
+        vector< vector<Mat> > pro_rgb; // 第一层是不同的序列，对应rgb_vec & dep_vec
+        vector< vector<Mat> > pro_dep; // 第二层对应投影在不同位置，如在0，1，2，3
     };
 
     class Tool
@@ -137,7 +138,17 @@ namespace fvv_tool
         void projUVtoXYZ(int id ,int startInd, int endInd);
         void projXYZtoUV(int cam_id, int startInd, int endInd, ImageFrame& tar_img);
         void writePLY(string name, pointcloud& pl);
+
         ImageFrame* cali;
+
+
+        // 下面三个是使用提供投影代码的测试
+        //    tool.forwardwarp(3, 4);
+        //    tool.forwardwarp(5, 4);
+        void forwardwarp(int src_camid, int dst_camid);
+        // warp from (u1,v1) to (u2,v2)
+        void projUVZtoXY(Eigen::Matrix4d &mp, double u, double v, double z, double *x, double *y, int height);
+        double projXYZtoUV(Eigen::Matrix4d &mp, double x, double y, double z, double *u, double *v, int height);
 
     private:
         int camera_num = 8;
