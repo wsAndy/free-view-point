@@ -23,11 +23,12 @@ int main(int argc, char ** argv)
 
     std::vector<int> camID;
 
+    camID.push_back(0);
     camID.push_back(3);
     camID.push_back(5);
     camID.push_back(6);
 
-    tool.loadImage(path,camID,89,90);// image's startIndex = 0, endIndex = 1 defaultly . < 100
+    tool.loadImage(path,camID,75,76);// image's startIndex = 0, endIndex = 1 defaultly . < 100
 
     /**
      *  from UV to XYZ , show me pcl_viewer
@@ -37,10 +38,12 @@ int main(int argc, char ** argv)
      * **/
 
     // 对0号相机的存储图像的[0,1)位置序列投影到XYZ中
+    tool.projUVtoXYZ(0,0,1);
     tool.projUVtoXYZ(3,0,1); // 0,1 in vector id
     tool.projUVtoXYZ(5,0,1);
     tool.projUVtoXYZ(6,0,1);
-//    tool.writePLY("/Users/sheng/Desktop/free-view-point/pl3.ply",tool.cali[3].pl_vec[0]);
+    tool.writePLY("/Users/sheng/Desktop/free-view-point/pl3.ply",tool.cali[3].pl_vec[0]);
+    tool.writePLY("/Users/sheng/Desktop/free-view-point/pl5.ply",tool.cali[5].pl_vec[0]);
 
 
     /**
@@ -55,17 +58,23 @@ int main(int argc, char ** argv)
     ImageFrame target_img;
     target_img.mP = cali[4].mP;
     target_img.RT = cali[4].RT;
-//    tool.projXYZtoUV(3,0,1,target_img);
+    tool.projXYZtoUV(3,0,1,target_img);
+
+//    target_img.mP = cali[4].mP;
+//    target_img.RT = cali[4].RT;
     tool.projXYZtoUV(5,0,1,target_img);
-    tool.projXYZtoUV(6,0,1,target_img);
+
+//    target_img.mP = cali[5].mP;
+//    target_img.RT = cali[5].RT;
+//    tool.projXYZtoUV(0,0,1,target_img);
 
 //    imwrite("/Users/sheng/Desktop/dep3.png",target_img.dep_vec[0]);
-    imwrite("/Users/sheng/Desktop/dep5.png",target_img.dep_vec[0]);
-    imwrite("/Users/sheng/Desktop/dep6.png",target_img.dep_vec[1]);
+    imwrite("/Users/sheng/Desktop/dep3.png",target_img.dep_vec[0]);
+    imwrite("/Users/sheng/Desktop/dep5.png",target_img.dep_vec[1]);
 
 //    imwrite("/Users/sheng/Desktop/rgb3.jpg", target_img.rgb_vec[0]);
-    imwrite("/Users/sheng/Desktop/rgb5.jpg", target_img.rgb_vec[0]);
-    imwrite("/Users/sheng/Desktop/rgb6.jpg", target_img.rgb_vec[1]);
+    imwrite("/Users/sheng/Desktop/rgb3.jpg", target_img.rgb_vec[0]);
+    imwrite("/Users/sheng/Desktop/rgb5.jpg", target_img.rgb_vec[1]);
 
 //    imshow("ori", cali[4].rgb_vec[0]);
 //    imshow("4",target_img.rgb_vec[0]);

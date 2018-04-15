@@ -194,7 +194,7 @@ void projUVZtoXY(double projMatrix[4][4], double u, double v, double z, double *
         double c0, c1, c2;
 
         // image (0,0) is bottom lefthand corner
-//        v = (double) m_Height - v - 1.0;
+        v = (double) m_Height - v - 1.0;
 
         c0 = z*projMatrix[0][2] + projMatrix[0][3];
         c1 = z*projMatrix[1][2] + projMatrix[1][3];
@@ -236,7 +236,7 @@ double projXYZtoUV(double projMatrix[4][4], double x, double y, double z, double
         *v /= w;
 
         // image (0,0) is bottom lefthand corner
-//        *v = (double) m_Height - *v - 1.0;
+        *v = (double) m_Height - *v - 1.0;
 
         return w;
 
@@ -256,7 +256,7 @@ void TestProject(double pts[8][2], int u, int v, unsigned char d)
     projUVZtoXY(m_CalibParams[3].m_ProjMatrix, (double)u, (double)v, z, &x, &y);
     printf( "3D pt = (%f, %f, %f) [coordinates wrt reference camera]\n", x, y, z );
 
-    for (int cam=4; cam<5; cam++)
+    for (int cam=0; cam<8; cam++)
     {
         double *pt = pts[cam];
 
@@ -280,6 +280,8 @@ int main()
         // I have test P, is OK.
   double pts[8][2];
   TestProject(pts, 300, 250, val);
+
+  cout << "ok" << endl;
 
         return 0;
 }

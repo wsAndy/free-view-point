@@ -61,6 +61,8 @@ void Tool::writePLY(string name, pointcloud& pl)
 
 
 }
+
+
 void Tool::projUVtoXYZ(int id ,int startInd, int endInd)
 {
     for(int i = startInd; i < endInd; ++i)
@@ -81,7 +83,10 @@ void Tool::projUVtoXYZ(int id ,int startInd, int endInd)
             for(int u = 0; u < width; ++u)
             {
                 double c0, c1, c2;
+
                 double z = getPixelActualDepth(dep.at<Vec3b>(v,u)[0]);
+
+                v = height - v - 1;
 
                 c0 = z*mp(0,2) + mp(0,3);
                 c1 = z*mp(1,2) + mp(1,3);
@@ -97,15 +102,30 @@ void Tool::projUVtoXYZ(int id ,int startInd, int endInd)
                 x = y*(mp(0,1)-u*mp(2,1)) + c0 - c2*u;
                 x/= mp(2,0)*u - mp(0,0);
 
+
+
+
                 point pp;
                 pp.x = x;
                 pp.y = y;
                 pp.z = z;
 
-                pp.r = rgb.at<cv::Vec3b>(v,u)[2];
-                pp.g = rgb.at<cv::Vec3b>(v,u)[1];
-                pp.b = rgb.at<cv::Vec3b>(v,u)[0];
+                pp.r = rgb.at<cv::Vec3b>(height -1- v, u)[2];
+                pp.g = rgb.at<cv::Vec3b>(height -1- v, u)[1];
+                pp.b = rgb.at<cv::Vec3b>(height -1- v, u)[0];
                 pl_.pl.push_back(pp);
+
+
+//                point pp;
+//                pp.x = x;
+//                pp.y = y;
+//                pp.z = z;
+
+//                pp.r = rgb.at<cv::Vec3b>(height -1- v, u)[2];
+//                pp.g = rgb.at<cv::Vec3b>(height -1- v, u)[1];
+//                pp.b = rgb.at<cv::Vec3b>(height -1- v, u)[0];
+//                pl_.pl.push_back(pp);
+//                // 此时，在点云图中，dep以及rgb刚好与真实的左右对称，但是投影之后的结果是没错的，但是在深度的前后上存在问题
 // for debug
 //                if( v==250 && u == 300)
 //                {
@@ -118,9 +138,12 @@ void Tool::projUVtoXYZ(int id ,int startInd, int endInd)
 
 }
 
+
+
 //
+
 /*
-void Tool::projUVtoXYZ(int id ,int startInd, int endInd)
+void Tool::projUVtoXYZ(int id ,int startInd, int endInd)  this function runs slowly
 {
     for(int i = startInd; i < endInd; ++i)
     {
@@ -175,6 +198,10 @@ void Tool::projUVtoXYZ(int id ,int startInd, int endInd)
                 pp.g = rgb.at<cv::Vec3b>(i,j)[1];
                 pp.b = rgb.at<cv::Vec3b>(i,j)[0];
                 pl_.pl.push_back(pp);
+                if( v==250 && u == 300)
+                {
+                    cout << "in uv to xyz, x = " << pp.x << ", y = " << pp.y << ", z = " << pp.z << endl;
+                }
             }
 
         }
@@ -224,31 +251,32 @@ void Tool::projXYZtoUV(int cam_id, int startInd, int endInd, ImageFrame& target_
                     u = u/w;
                     v = v/w;
 
+                    v = height - v - 1;
                     // 这种投影一定有裂缝
                     int row = round( v );
                     int col = round( u );
 
 // for debug
-//                    if( i == 250 && j == 300)
-//                    {
-//                        cout << "x = " << x << ", y= " << y << " ,z = " << z << endl;
-//                        cout << u << "," << v << endl;
-//                        cout << "row = " << row << ", col = " << col << endl;
-//                    }
+                    if( i == 250 && j == 300)
+                    {
+                        cout << "x = " << x << ", y= " << y << " ,z = " << z << endl;
+                        cout << u << "," << v << endl;
+                        cout << "row = " << row << ", col = " << col << endl;
+                    }
 
                     if(row >= height || col >= width || row < 0 || col < 0)
                     {
                         continue;
                     }
-                    if( dep_tar.at<cv::Vec3b>(row,col)[0] == 0 || dep_tar.at<cv::Vec3b>(row,col)[0] > getPixelDepth(w) )
+                    if( dep_tar.at<cv::Vec3b>(row,col)[0] == 0 || dep_tar.at<cv::Vec3b>(row,col)[0] < getPixelDepth(w) )
                     {
                         dep_tar.at<cv::Vec3b>(row, col)[0] = getPixelDepth(w);
                         dep_tar.at<cv::Vec3b>(row, col)[1] = getPixelDepth(w);
                         dep_tar.at<cv::Vec3b>(row, col)[2] = getPixelDepth(w);
 
-                        rgb_tar.at<cv::Vec3b>(row,col)[0] = pl_.pl[i*width + j].b;
-                        rgb_tar.at<cv::Vec3b>(row,col)[1] = pl_.pl[i*width + j].g;
-                        rgb_tar.at<cv::Vec3b>(row,col)[2] = pl_.pl[i*width + j].r;
+                        rgb_tar.at<cv::Vec3b>(row, col )[0] = pl_.pl[i*width + j].b;
+                        rgb_tar.at<cv::Vec3b>(row, col )[1] = pl_.pl[i*width + j].g;
+                        rgb_tar.at<cv::Vec3b>(row, col )[2] = pl_.pl[i*width + j].r;
 //                        if( i == 250 && j == 300 )
 //                        {
 //                            rgb_tar.at<cv::Vec3b>(row,col)[0] = 0;
@@ -268,91 +296,6 @@ void Tool::projXYZtoUV(int cam_id, int startInd, int endInd, ImageFrame& target_
     }
 
 }
-
-
-
-
-
-
-/*
-// 这边这个投影并不是最终的，要注意这个问题其实挺多的，需要讲究
-// 这个target_img只对应一个源图像的投影的结果，对于多个源投影的结果，要有多个target_img
-void Tool::projXYZtoUV(int cam_id, int startInd, int endInd, ImageFrame& target_img)
-{
-    ImageFrame src_img = cali[cam_id];
-    Eigen::Matrix4d P = target_img.mP;
-    Eigen::Matrix4d RT = target_img.RT;
-    if(P.cols() != 4 || P.rows() !=4)
-    {
-        cerr << " targetP is not a [4x4] matrix!" <<endl;
-    }else{
-        cout << "project XYZ to UV start" <<endl;
-        for(int cam = startInd; cam < endInd; cam++)
-        {
-            pointcloud pl_ = src_img.pl_vec[cam];
-            int height = pl_.height;
-            int width = pl_.width;
-
-            Mat rgb_tar(height, width, CV_8UC3);
-            Mat dep_tar(height, width, CV_8UC1);
-
-            for(int i = 0; i < height; ++i)
-            {
-                for(int j = 0; j < width; ++j)
-                {
-
-                    Vector4d X_;
-                    X_(0) = pl_.pl[i*width + j].x; // 这一些都是在世界坐标系中的值
-                    X_(1) = pl_.pl[i*width + j].y;
-                    X_(2) = pl_.pl[i*width + j].z;
-                    X_(3) = 1.0;
-
-                    Vector4d tmp_x;
-                    tmp_x = RT*X_;
-                    double zc = tmp_x(2);
-
-                    Vector4d x_;
-                    x_ = P*X_;
-// 这边因当给出目前target位置的深度！！！！！！
-                    if(zc < 0.2)
-                    {
-                        // too close
-
-                        continue;
-                    }
-
-                    // 这种投影一定有裂缝
-                    int row = round( x_(1)/zc );
-                    int col = round( x_(0)/zc );
-
-                    if( i == 250 && j == 300)
-                    {
-                        cout << col << "," << row << endl;
-                    }
-
-                    if(row >= height || col >= width || row < 0 || col < 0)
-                    {
-                        continue;
-                    }
-
-                    dep_tar.at<uchar>(row, col) = (uchar) getPixelDepth(X_(2));
-                    rgb_tar.at<cv::Vec3b>(row,col)[0] = pl_.pl[i*width + j].b;
-                    rgb_tar.at<cv::Vec3b>(row,col)[1] = pl_.pl[i*width + j].g;
-                    rgb_tar.at<cv::Vec3b>(row,col)[2] = pl_.pl[i*width + j].r;
-
-
-                }
-            }
-
-            target_img.rgb_vec.push_back(rgb_tar);
-            target_img.dep_vec.push_back(dep_tar);
-        }
-
-    }
-
-}
-*/
-
 
 void Tool::showParameter()
 {
@@ -533,22 +476,6 @@ void Tool::generateP()
 
 double Tool::getPixelActualDepth(unsigned char d)
 {
-
-/*
-    Mat ac_dep(depth.cols,depth.rows,CV_8UC1); // in this dataset, depth image is saved in 8bits.
-
-    vector<Mat> spl;
-    split(depth,spl);
-
-    Eigen::Matrix<float,Eigen::Dynamic,Eigen::Dynamic> eg_dep,eg_out;
-    cv2eigen(spl[0],eg_dep);
-
-    eg_dep = (eg_dep/255)*(1.0/MinZ - 1.0/MaxZ);
-    // here you also need to operate each element with  +(1/MaxZ) , and get 1/Z
-
-    eigen2cv(eg_out,ac_dep);
-*/
-
     return 1.0/((d/255.0)*(1.0/MinZ - 1.0/MaxZ) + 1.0/MaxZ);
 }
 
