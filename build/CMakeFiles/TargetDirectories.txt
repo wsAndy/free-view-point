@@ -1,4 +1,6 @@
 /Users/sheng/Desktop/free-view-point/build/CMakeFiles/rebuild_cache.dir
 /Users/sheng/Desktop/free-view-point/build/CMakeFiles/edit_cache.dir
 /Users/sheng/Desktop/free-view-point/build/CMakeFiles/tt.dir
+/Users/sheng/Desktop/free-view-point/build/CMakeFiles/test.dir
+/Users/sheng/Desktop/free-view-point/build/CMakeFiles/ftv.dir
 /Users/sheng/Desktop/free-view-point/build/CMakeFiles/free-view-point.dir

@@ -63,6 +63,8 @@ namespace fvv_tool
         vector< vector<Mat> > pro_rgb; // 第一层是不同的序列，对应rgb_vec & dep_vec
         vector< vector<Mat> > pro_dep; // 第二层对应投影在不同位置，如在0，1，2，3
 
+        vector< Mat> vir_img;
+
 
     };
 
@@ -79,10 +81,6 @@ namespace fvv_tool
         // load one image
         void loadImage(string& campath, vector<int>& camID, int startIndex = 0, int endIndex = 1);
 
-        //show pointcloud
-    //    void showPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr cd_p);
-
-    //    void showPointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_p);
 
         void showParameter();
 
@@ -114,25 +112,7 @@ namespace fvv_tool
                        Mat& right_rgb, Mat& right_dep, Matrix4d& right_mp, Matrix<double,3,1>& right_T,
                        Mat& vir_rgb, Matrix4d& target_mp, Matrix<double,3,1>& target_T);
 
-        // my god, in this paper, when we project depth or rgb image to a virtual image plane, rgb and depth
-        // is uncorrelation  !!!!
-
-        // maybe I should not use pcl and define a struct directly...
-
-        // infact , I think this two function should be operate in one function.
-        // project from UV to XYZ
-    //    void projFromUVToXYZ( Mat& rgb, Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd);
-
-    //    void projFromUVToXYZ( Mat& dep, int img_index, pcl::PointCloud<pcl::PointXYZ>::Ptr cd);
-
-        // project from XYZ to UV, since you need to project the pointcloud to a visual image plane
-    //    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd, Matrix4d &targetP, Mat& rgb, Mat& dep, std::vector<cv::Point>& vir_link_ori);
-
-    //    void projFromXYZToUV( pcl::PointCloud<pcl::PointXYZ>::Ptr cd, Matrix4d &targetP, Mat& dep
-    //                          , std::vector<cv::Point>& vir_link_ori);
-
-
-
+        void colorConsistency(Mat& left_img, Mat &right_img);
 
         // id: image id that project.
         // startId: project which image from sequence? from 0 to  rgb_vec.size()-1
@@ -140,6 +120,18 @@ namespace fvv_tool
         void projUVtoXYZ(int id ,int startInd, int endInd);
         void projXYZtoUV(int cam_id, int startInd, int endInd, ImageFrame& tar_img);
         void writePLY(string name, pointcloud& pl);
+
+
+        float distance(int x, int y, int i, int j) {
+            return float(sqrt(pow(x - i, 2) + pow(y - j, 2)));
+        }
+
+        double gaussian(float x, double sigma) {
+            return exp(-(pow(x, 2))/(2 * pow(sigma, 2))) / (2 * CV_PI * pow(sigma, 2));
+        }
+
+        void applyBilateralFilter(Mat source, Mat filteredImage, int x, int y, int diameter, double sigmaI, double sigmaS);
+
 
         ImageFrame* cali;
 
@@ -154,8 +146,8 @@ namespace fvv_tool
 
     private:
         int camera_num = 8;
-        int MaxZ = 120;
-        int MinZ = 44;
+        int MaxZ = 120;  //120
+        int MinZ = 44;   // 44
 
         int THRESHOLD = 5;
 

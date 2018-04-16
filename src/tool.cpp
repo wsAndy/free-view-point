@@ -494,6 +494,52 @@ double Tool::getPixelDepth(double dw)
     return 255.0*(MaxZ*MinZ)*(1.0/dw-1.0/MaxZ)/(MaxZ-MinZ);
 }
 
+void Tool::colorConsistency(Mat& left_img, Mat &right_img)
+{
+    Mat left_hsv, right_hsv;
+    cvtColor(left_img,left_hsv,CV_BGR2HSV);
+    cvtColor(right_img,right_hsv,CV_BGR2HSV);
+    Mat l_v[3], r_v[3];
+    split(left_hsv,l_v);
+    split(right_hsv,r_v);
+
+    double l_mean, l_std, r_mean, r_std, mean_, std_;
+    Mat mat_mean, mat_stddev;
+    meanStdDev(l_v[2], mat_mean, mat_stddev);
+    l_mean = mat_mean.at<double>(0,0);
+    l_std = mat_stddev.at<double>(0,0);
+
+    meanStdDev(r_v[2], mat_mean, mat_stddev);
+    r_mean = mat_mean.at<double>(0,0);
+    r_std = mat_stddev.at<double>(0,0);
+
+    mean_ = (l_mean + r_mean)/2.0;
+    std_ = (l_std + r_std)/2.0;
+
+    cout << "l_mean = " << l_mean << ", r_mean = " << r_mean << endl;
+    cout << "l_std = " << l_std << ", r_std = " << r_std << endl;
+
+    for(int i = 0; i < left_img.rows; ++i)
+    {
+        for(int j = 0; j < left_img.cols; ++j)
+        {
+            uchar val = left_hsv.at<Vec3b>(i,j)[2];
+            uchar new_val = val;
+            new_val = (uchar)( (val - l_mean)*std_/l_std + mean_ );
+            left_hsv.at<Vec3b>(i,j)[2] = new_val;
+
+            val = right_hsv.at<Vec3b>(i,j)[2];
+            new_val = val;
+            new_val = (uchar)( (val - r_mean)*std_/r_std + mean_ );
+            right_hsv.at<Vec3b>(i,j)[2] = new_val;
+        }
+    }
+
+    cvtColor(left_hsv, left_img, CV_HSV2BGR);
+    cvtColor(right_hsv, right_img, CV_HSV2BGR);
+
+}
+
 void Tool::rendering(ImageFrame& img_frame)
 {
     // use two image
@@ -520,21 +566,21 @@ void Tool::rendering(ImageFrame& img_frame)
 
     Mat vir_rgb = Mat::zeros(left_rgb.rows, left_rgb.cols, CV_8UC3);
 
+//    waitKey(0);
+
+    colorConsistency(left_rgb, right_rgb);
     /**
      *  reproject the pixel on virtual image plane to left image and right image
      *  get its rgb values
      *
      */
+
     fusingRgb(left_rgb,left_dep, left_mp, left_T, right_rgb,right_dep, right_mp, right_T, vir_rgb, target_mp, target_T );
 
-//    addWeighted(vir_rgb,0.5,cali[4].rgb,0.5,0,vir_rgb);
-//    imshow("target",cali[4].rgb);
 
-//    resize(vir_rgb,vir_rgb,Size(int(vir_rgb.cols/2),int(vir_rgb.rows/2)));
-
-//    imshow("vir_rgb",vir_rgb);
+    img_frame.vir_img.push_back(vir_rgb);
     imwrite("/Users/sheng/Desktop/result.jpg",vir_rgb);
-//    waitKey(0);
+
     cout << "fusing rgb over." <<endl;
 
 }
@@ -553,7 +599,31 @@ void Tool::smoothDepth(ImageFrame& img_frame, int k_size)
         Mat dep = img_frame.dep_vec[i];
         cv::medianBlur(dep,dep,k_size);
         img_frame.dep_vec[i] = dep;
+        cout << "i = " << i << endl;
     }
+
+    // could clear small holes
+    for(int i = 0; i < img_frame.dep_vec.size(); ++i)
+    {
+        Mat dep = img_frame.dep_vec[i];
+        Mat element = getStructuringElement(MORPH_RECT, Size(3,3));
+        morphologyEx(dep,dep,MORPH_CLOSE, element);
+        img_frame.dep_vec[i] = dep;
+    }
+
+// 下面这个实验结果好像没什么效果...
+//    for(int i = 0; i < img_frame.dep_vec.size(); ++i)
+//    {
+//        Mat dep = img_frame.dep_vec[i];
+//        Mat dep_new = Mat::zeros(dep.rows, dep.cols, CV_8UC3);
+//        for(int u = 2; u < dep.rows -2; ++u)
+//        {
+//            for(int v = 2; v < dep.cols - 2; ++v)
+//            {
+//                applyBilateralFilter(dep, dep_new, u, v, 5, 5, 20);
+//            }
+//        }
+//    }
 
 }
 
@@ -563,6 +633,8 @@ void Tool::smoothDepth(ImageFrame& img_frame, int k_size)
  * input: left and right rgb image
  * output: virtual imahe plane rgb image
  */
+
+/*
 
 void Tool::fusingRgb(Mat &left_rgb, Mat &left_dep, Matrix4d& left_mp, Matrix<double,3,1>& left_T,
                      Mat &right_rgb, Mat &right_dep, Matrix4d& right_mp, Matrix<double,3,1>& right_T,
@@ -636,7 +708,96 @@ void Tool::fusingRgb(Mat &left_rgb, Mat &left_dep, Matrix4d& left_mp, Matrix<dou
 
 
 }
+*/
 
+/**
+ * generate rgb image in novel viewpoint image plane
+ *
+ * input: left and right rgb image
+ * output: virtual imahe plane rgb image
+ */
+
+void Tool::fusingRgb(Mat &left_rgb, Mat &left_dep, Matrix4d& left_mp, Matrix<double,3,1>& left_T,
+                     Mat &right_rgb, Mat &right_dep, Matrix4d& right_mp, Matrix<double,3,1>& right_T,
+                     Mat &target_rgb, Matrix4d& target_mp, Matrix<double,3,1>& target_T)
+{
+    Array3d t1 = target_T - left_T;
+    Array3d t2 = target_T - right_T;
+
+    double sub_L = sqrt(t1.square().sum());
+    double sub_R = sqrt(t2.square().sum());
+
+    double alpha = (sub_L)/(sub_L + sub_R);
+
+    double left_u = 0.0, left_v = 0.0, right_u = 0.0, right_v = 0.0 ;
+
+    cout << "alpha: " << alpha << endl;
+
+    for(int i = 0; i < left_rgb.rows; ++i)
+    {
+        for(int j = 0; j < left_rgb.cols; ++j)
+        {
+
+            if( left_dep.at<Vec3b>(i,j)[0] > 0)
+            {
+                // 这边计算反向投影的对应点
+
+                warpuv(target_mp, left_mp, (double)j, (double)i, &left_u, &left_v, left_dep);
+
+                if( round(left_u) < 0 || round(left_u) > left_dep.cols || round(left_v) < 0 || round(left_v) >= left_dep.rows )
+                {
+                    continue;
+                }
+
+                for(int ch = 0; ch < left_rgb.channels(); ++ch)
+                {
+                    target_rgb.at<Vec3b>(i,j)[ch] = left_rgb.at<Vec3b>(round(left_v), round(left_u) )[ch];
+                }
+            }else if(right_dep.at<Vec3b>(i,j)[0] >0 )
+            {
+                warpuv(target_mp, right_mp, (double)j, (double)i, &right_u, &right_v, right_dep);
+                if( round(right_u) < 0 || round(right_u) > left_dep.cols || round(right_v) < 0 || round(right_v) >= left_dep.rows )
+                {
+                    continue;
+                }
+                for(int ch = 0; ch < left_rgb.channels(); ++ch)
+                {
+                    target_rgb.at<Vec3b>(i,j)[ch] = right_rgb.at<Vec3b>(round(right_v), round(right_u))[ch];
+                }
+            }else{
+                ;
+            }
+
+        }
+    }
+
+
+}
+
+
+void Tool::applyBilateralFilter(Mat source, Mat filteredImage, int x, int y, int diameter, double sigmaI, double sigmaS) {
+    double iFiltered = 0;
+    double wP = 0;
+    int neighbor_x = 0;
+    int neighbor_y = 0;
+    int half = diameter / 2;
+
+    for(int i = 0; i < diameter; i++) {
+        for(int j = 0; j < diameter; j++) {
+            neighbor_x = x - (half - i);
+            neighbor_y = y - (half - j);
+            double gi = gaussian(source.at<Vec3b>(neighbor_x, neighbor_y)[0] - source.at<Vec3b>(x, y)[0], sigmaI);
+            double gs = gaussian(distance(x, y, neighbor_x, neighbor_y), sigmaS);
+            double w = gi * gs;
+            iFiltered = iFiltered + source.at<Vec3b>(neighbor_x, neighbor_y)[0] * w;
+            wP = wP + w;
+        }
+    }
+    iFiltered = iFiltered / wP;
+    filteredImage.at<Vec3b>(x, y)[0] = round(iFiltered);
+    filteredImage.at<Vec3b>(x, y)[1] = round(iFiltered);
+    filteredImage.at<Vec3b>(x, y)[2] = round(iFiltered);
+}
 
 
 /**
