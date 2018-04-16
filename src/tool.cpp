@@ -240,6 +240,7 @@ void Tool::projXYZtoUV(int cam_id, int startInd, int endInd, ImageFrame& target_
 
             target_img.rgb_vec.push_back(rgb_tar);
             target_img.dep_vec.push_back(dep_tar);
+            target_img.proj_src_id.push_back(cam_id);
         }
 
     }
@@ -483,96 +484,44 @@ double Tool::getPixelDepth(double dw)
     return 255.0*(MaxZ*MinZ)*(1.0/dw-1.0/MaxZ)/(MaxZ-MinZ);
 }
 
-//void Tool::rendering(vector<int> &img_id, Matrix4d& targetP )
-//{
-//    // use two image
+void Tool::rendering(ImageFrame& img_frame)
+{
+    // use two image
 
-//    Mat left_d = cali[img_id[0]].dep;
-//    Mat right_d = cali[img_id[1]].dep;
+    Matrix<double,3,1> left_T;
+    Matrix<double,3,1> right_T;
+    Matrix<double,3,1> target_T;
 
-//    Mat vir_depth = Mat::zeros(left_d.rows,left_d.cols,CV_8UC1); // depth image in novel viewpoint
-//    Mat vir_rgb = Mat::zeros(left_d.rows,left_d.cols,CV_8UC3);   // rgb image in novel viewpoint
+    left_T = (cali[img_frame.proj_src_id[0]].mP).block(0,3,3,1);
+    right_T = (cali[img_frame.proj_src_id[1]].mP).block(0,3,3,1);
+    target_T = img_frame.mP.block(0,3,3,1);
 
-//    Mat left_r = cali[img_id[0]].rgb;
-//    Mat right_r = cali[img_id[1]].rgb;
+    Mat left_rgb = img_frame.rgb_vec[0];
+    Mat left_dep = img_frame.dep_vec[0];
 
-//    Matrix<double,3,1> left_T;
-//    Matrix<double,3,1> right_T;
-//    Matrix<double,3,1> target_T;
+    Mat right_rgb = img_frame.rgb_vec[1];
+    Mat right_dep = img_frame.dep_vec[1];
 
-//    left_T = (cali[img_id[0]].mP).block(0,3,3,1);
-//    right_T = (cali[img_id[1]].mP).block(0,3,3,1);
-//    target_T = targetP.block(0,3,3,1);
+    Mat vir_rgb = Mat::zeros(left_rgb.rows, left_rgb.cols, CV_8UC3);
 
+    /**
+     *  reproject the pixel on virtual image plane to left image and right image
+     *  get its rgb values
+     *
+     */
+    fusingRgb(left_rgb,left_dep, left_T, right_rgb,right_dep, right_T, vir_rgb, target_T );
 
-//    // point cloud's point is link to image's pixel , which has the same index.!!!
-//    // which makes `vir_link_ori` more easier.
-////    pcl::PointCloud<pcl::PointXYZ>::Ptr tmp_l_cd( new pcl::PointCloud<pcl::PointXYZ>);
-////    pcl::PointCloud<pcl::PointXYZ>::Ptr tmp_r_cd( new pcl::PointCloud<pcl::PointXYZ>);
+//    addWeighted(vir_rgb,0.5,cali[4].rgb,0.5,0,vir_rgb);
+//    imshow("target",cali[4].rgb);
 
+//    resize(vir_rgb,vir_rgb,Size(int(vir_rgb.cols/2),int(vir_rgb.rows/2)));
 
-//    /**
-//     * project left depth image to virtual image plane
-//     * project right depth image to virtual image plane
-//     * fuseing these two depth images and get one.
-//     *
-//     **/
+//    imshow("vir_rgb",vir_rgb);
+    imwrite("/Users/sheng/Desktop/result.jpg",vir_rgb);
+//    waitKey(0);
+    cout << "fusing rgb over." <<endl;
 
-//    Mat left_vir_d = Mat::zeros(left_d.rows, left_d.cols,CV_8UC1); // left project to virtual depth image.
-//    std::vector<cv::Point2i> left_vir_link_orig; // used to link pixels in origin image to those pixels in virtual image plane
-
-////    projFromUVToXYZ(left_d,img_id[0],tmp_l_cd);
-////    projFromXYZToUV(tmp_l_cd, targetP, left_vir_d, left_vir_link_orig);
-
-//    Mat right_vir_d = Mat::zeros(left_d.rows, left_d.cols,CV_8UC1); // right project to virtual depth image
-//    std::vector<cv::Point2i> right_vir_link_orig; // used to link pixels in origin image to those pixels in virtual image plane
-
-////    projFromUVToXYZ(right_d,img_id[1],tmp_r_cd);
-////    projFromXYZToUV(tmp_r_cd, targetP, right_vir_d, right_vir_link_orig);
-
-//    imwrite("/home/sheng/Desktop/left_vir.png",left_vir_d);
-//    imwrite("/home/sheng/Desktop/right_vir.png",right_vir_d);
-
-//    smoothDepth(left_vir_d);
-//    smoothDepth(right_vir_d);
-
-//    fusingDepth(left_vir_d,right_vir_d,vir_depth);
-
-////    imwrite("/home/sheng/Desktop/result_dep_left.png",left_vir_d); // maybe the depth image is wrong.
-////    imwrite("/home/sheng/Desktop/result_dep_right.png",right_vir_d);
-
-
-//    cout << "fusing depth over." <<endl;
-
-//    imwrite("/home/sheng/Desktop/result_dep1.png",vir_depth);
-
-////    imshow("vir",vir_depth);
-////    waitKey(0);
-
-//    // vir_depth  is already.
-
-//    /**
-//     *  reproject the pixel on virtual image plane to left image and right image
-//     *  get its rgb values
-//     *
-//     */
-
-//    // TODO
-//    fusingRgb(left_r,left_vir_d,left_vir_link_orig, left_T,
-//              right_r,right_vir_d,right_vir_link_orig, right_T,
-//              vir_rgb, target_T );
-
-////    addWeighted(vir_rgb,0.5,cali[4].rgb,0.5,0,vir_rgb);
-////    imshow("target",cali[4].rgb);
-
-////    resize(vir_rgb,vir_rgb,Size(int(vir_rgb.cols/2),int(vir_rgb.rows/2)));
-
-////    imshow("vir_rgb",vir_rgb);
-//    imwrite("/home/sheng/Desktop/result1.png",vir_rgb);
-////    waitKey(0);
-//    cout << "fusing rgb over." <<endl;
-
-//}
+}
 
 
 
@@ -581,9 +530,15 @@ double Tool::getPixelDepth(double dw)
  *
  */
 
-void Tool::smoothDepth(Mat &dep)
+void Tool::smoothDepth(ImageFrame& img_frame, int k_size)
 {
-    cv::medianBlur(dep,dep,5);
+    for(int i = 0; i < img_frame.dep_vec.size(); ++i)
+    {
+        Mat dep = img_frame.dep_vec[i];
+        cv::medianBlur(dep,dep,k_size);
+        img_frame.dep_vec[i] = dep;
+    }
+
 }
 
 /**
@@ -593,8 +548,8 @@ void Tool::smoothDepth(Mat &dep)
  * output: virtual imahe plane rgb image
  */
 
-void Tool::fusingRgb(Mat &left_rgb, Mat &left_dep, vector<Point2i> &left_vir_link_orig, Matrix<double,3,1>& left_T,
-                     Mat &right_rgb, Mat &right_dep, vector<Point2i> &right_vir_link_orig, Matrix<double,3,1>& right_T,
+void Tool::fusingRgb(Mat &left_rgb, Mat &left_dep,  Matrix<double,3,1>& left_T,
+                     Mat &right_rgb, Mat &right_dep, Matrix<double,3,1>& right_T,
                      Mat &target_rgb, Matrix<double,3,1>& target_T)
 {
     Array3d t1 = target_T - left_T;
@@ -607,43 +562,28 @@ void Tool::fusingRgb(Mat &left_rgb, Mat &left_dep, vector<Point2i> &left_vir_lin
 
     cout << "alpha: " << alpha << endl;
 
-//    target_rgb = cv::Mat::zeros(left_rgb.rows,left_rgb.cols,CV_8UC3);
-
     for(int i = 0; i < left_rgb.rows; ++i)
     {
         for(int j = 0; j < left_rgb.cols; ++j)
         {
-
-            // for those u,v that don not match any ul,vl/ur,vr , since their depth value has been set 0,
-            // which must smaller than THRESOLD, so, Point(-1,-1) will not be used to find pixel that
-            // in left image or right image.
-
-            // calculate ZR(u,v) and ZL(u,v), Z is depth
-            // the left_dep and right_dep should in virtual image plane that project from left and right depth image.
-            int occL = left_dep.at<uchar>(i,j) > THRESHOLD ? 0 : 1;
-            int occR = right_dep.at<uchar>(i,j) > THRESHOLD ? 0 : 1;
-
-            if(occL == 0 && occR == 0)
+            if( left_dep.at<Vec3b>(i,j)[0] > 0 && right_dep.at<Vec3b>(i,j)[0] > 0 )
             {
-                target_rgb.at<cv::Vec3b>(i,j)[0] = (1-alpha)*left_rgb.at<cv::Vec3b>(left_vir_link_orig[i*left_rgb.cols+j])[0]
-                        + alpha*right_rgb.at<cv::Vec3b>(right_vir_link_orig[i*left_rgb.cols+j])[0];
-                target_rgb.at<cv::Vec3b>(i,j)[1] = (1-alpha)*left_rgb.at<cv::Vec3b>(left_vir_link_orig[i*left_rgb.cols+j])[1]
-                        + alpha*right_rgb.at<cv::Vec3b>(right_vir_link_orig[i*left_rgb.cols+j])[1];
-                target_rgb.at<cv::Vec3b>(i,j)[2] = (1-alpha)*left_rgb.at<cv::Vec3b>(left_vir_link_orig[i*left_rgb.cols+j])[2]
-                        + alpha*right_rgb.at<cv::Vec3b>(right_vir_link_orig[i*left_rgb.cols+j])[2];
-
-            }else if(occL == 0 && occR == 1)
+                for(int ch = 0; ch < left_rgb.channels(); ++ch)
+                {
+                    target_rgb.at<Vec3b>(i,j)[ch] = (1-alpha) * left_rgb.at<Vec3b>(i,j)[ch] + alpha * right_rgb.at<Vec3b>(i,j)[ch];
+                }
+            }else if(left_dep.at<Vec3b>(i,j)[0] == 0 && right_dep.at<Vec3b>(i,j)[0] >0 )
             {
-                target_rgb.at<cv::Vec3b>(i,j)[0] = left_rgb.at<cv::Vec3b>(left_vir_link_orig[i*left_rgb.cols+j])[0];
-                target_rgb.at<cv::Vec3b>(i,j)[1] = left_rgb.at<cv::Vec3b>(left_vir_link_orig[i*left_rgb.cols+j])[1];
-                target_rgb.at<cv::Vec3b>(i,j)[2] = left_rgb.at<cv::Vec3b>(left_vir_link_orig[i*left_rgb.cols+j])[2];
-
-            }else if (occL == 1 && occR == 0)
+                for(int ch = 0; ch < left_rgb.channels(); ++ch)
+                {
+                    target_rgb.at<Vec3b>(i,j)[ch] = right_rgb.at<Vec3b>(i,j)[ch];
+                }
+            }else if( left_dep.at<Vec3b>(i,j)[0] > 0 && right_dep.at<Vec3b>(i,j)[0] == 0 )
             {
-                target_rgb.at<cv::Vec3b>(i,j)[0] = right_rgb.at<cv::Vec3b>(right_vir_link_orig[i*left_rgb.cols+j])[0];
-                target_rgb.at<cv::Vec3b>(i,j)[1] = right_rgb.at<cv::Vec3b>(right_vir_link_orig[i*left_rgb.cols+j])[1];
-                target_rgb.at<cv::Vec3b>(i,j)[2] = right_rgb.at<cv::Vec3b>(right_vir_link_orig[i*left_rgb.cols+j])[2];
-
+                for(int ch = 0; ch < left_rgb.channels(); ++ch)
+                {
+                    target_rgb.at<Vec3b>(i,j)[ch] = left_rgb.at<Vec3b>(i,j)[ch];
+                }
             }else{
                 ;
             }
@@ -652,58 +592,6 @@ void Tool::fusingRgb(Mat &left_rgb, Mat &left_dep, vector<Point2i> &left_vir_lin
     }
 }
 
-/**
- *  fusing two depth image
- *  And I think I'm right in the process of fusing two depth images.
- */
-
-void Tool::fusingDepth(Mat &left_, Mat &right_, Mat &target)
-{
-    if(left_.cols!=right_.cols || left_.rows!= right_.rows)
-    {
-        cerr << "Error! in function [fusingDepth], input left image and right image not in the same size." <<endl;
-    }else{
-
-        cout << "in depth fusing." <<endl;
-
-        int count = 0;
-        for(int i = 0; i < left_.rows; ++i)
-        {
-            for(int j = 0; j < left_.cols; ++j)
-            {
-                if (left_.at<uchar>(i,j) < 0.5 && right_.at<uchar>(i,j) < 0.5)
-                { // both not have value
-
-                    count = count + 1; // count those empty point
-                    continue; // stay 0
-                }else if ( left_.at<uchar>(i,j) < 0.5 && right_.at<uchar>(i,j) >=0.5 )
-                {
-//                    cout << "                    R"<<endl;
-                    target.at<uchar>(i,j) = right_.at<uchar>(i,j);
-
-                }else if (left_.at<uchar>(i,j) >= 0.5 && right_.at<uchar>(i,j) < 0.5)
-                {
-//                    cout << "L                    "<<endl;
-                    target.at<uchar>(i,j) = left_.at<uchar>(i,j);
-
-                }else{
-                    // both has value
-//                    cout << "          =          "<<endl;
-                    if(left_.at<uchar>(i,j) > right_.at<uchar>(i,j) )
-                    {
-                        target.at<uchar>(i,j) = right_.at<uchar>(i,j);
-                    }else{
-                        target.at<uchar>(i,j) = left_.at<uchar>(i,j);
-                    }
-                }
-            }
-        }
-
-        cerr << endl << "In fusing Depth image, " << (count)/(left_.rows * left_.cols)
-             << "% points is empty in virtual image" << endl;
-    }
-
-}
 
 
 /**

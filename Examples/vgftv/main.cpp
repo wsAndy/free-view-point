@@ -50,12 +50,14 @@ int main(int argc, char ** argv)
     tool.projXYZtoUV(3,0,1,target_img);
     tool.projXYZtoUV(5,0,1,target_img);
 
-    imwrite("/Users/sheng/Desktop/dep3.png",target_img.dep_vec[0]);
-    imwrite("/Users/sheng/Desktop/dep5.png",target_img.dep_vec[1]);
+    tool.smoothDepth(target_img,3);
 
-    imwrite("/Users/sheng/Desktop/rgb3.jpg", target_img.rgb_vec[0]);
-    imwrite("/Users/sheng/Desktop/rgb5.jpg", target_img.rgb_vec[1]);
+//    imwrite("/Users/sheng/Desktop/dep3.png",target_img.dep_vec[0]);
+//    imwrite("/Users/sheng/Desktop/dep5.png",target_img.dep_vec[1]);
 
+//    imwrite("/Users/sheng/Desktop/rgb3.jpg", target_img.rgb_vec[0]);
+//    imwrite("/Users/sheng/Desktop/rgb5.jpg", target_img.rgb_vec[1]);
+    tool.rendering(target_img);
 
     /**
      *  fusing two image into a novel one.

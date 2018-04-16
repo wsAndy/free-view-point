@@ -57,9 +57,13 @@ namespace fvv_tool
         vector<Mat> dep_vec; // 该值是世界坐标系的深度
 //        vector<Mat> xyt_vec;
         vector<pointcloud> pl_vec; // 在世界坐标系中的值
+        vector<int> proj_src_id; // 对一个特定位置而言，投影了哪一些id的图像，对应在投影位置的rgb_vec与dep_vec,如果一次就有同一个camid的多个序列位置的投影....哎乱了
 
+        // 下面这两个还没有使用
         vector< vector<Mat> > pro_rgb; // 第一层是不同的序列，对应rgb_vec & dep_vec
         vector< vector<Mat> > pro_dep; // 第二层对应投影在不同位置，如在0，1，2，3
+
+
     };
 
     class Tool
@@ -98,18 +102,15 @@ namespace fvv_tool
         double getPixelDepth(double dw);
 
         // rendering to novel viewpoint.
-        void rendering(vector<int>& img_id, Matrix4d& targetP);
-
-        // fusing two depth image in novel view point image plane
-        void fusingDepth(Mat& left, Mat& right, Mat& target);
+        void rendering(ImageFrame& img_frame);
 
         // smooth depth image
-        void smoothDepth(Mat& dep);
+        void smoothDepth(ImageFrame& img_frame, int k_size);
 
         //fusing two rgb image
-        void fusingRgb(Mat& left_rgb, Mat& left_dep, vector<cv::Point2i>& left_vir_link_orig, Matrix<double,3,1>& left_T,
-                       Mat& right_rgb, Mat& right_dep, vector<cv::Point2i>& right_vir_link_orig, Matrix<double,3,1>& right_T,
-                       Mat& target, Matrix<double,3,1>& target_T);
+        void fusingRgb(Mat& left_rgb, Mat& left_dep, Matrix<double,3,1>& left_T,
+                       Mat& right_rgb, Mat& right_dep,  Matrix<double,3,1>& right_T,
+                       Mat& vir_rgb, Matrix<double,3,1>& target_T);
 
 
         // my god, in this paper, when we project depth or rgb image to a virtual image plane, rgb and depth
