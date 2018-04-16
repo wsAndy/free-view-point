@@ -31,7 +31,7 @@ int main(int argc, char ** argv)
     tool.loadImage(path,camID,75,76);// image's startIndex = 0, endIndex = 1 defaultly . < 100
 
     // 这个是使用提供投影代码的测试
-//    tool.forwardwarp(3, 4);
+    tool.forwardwarp(3, 4);
 //    tool.forwardwarp(5, 4);
 
     tool.projUVtoXYZ(0,0,1);
@@ -50,7 +50,7 @@ int main(int argc, char ** argv)
     tool.projXYZtoUV(3,0,1,target_img);
     tool.projXYZtoUV(5,0,1,target_img);
 
-    tool.smoothDepth(target_img,3);
+    tool.smoothDepth(target_img,3); // 虽然在平滑之后的深度没有了部分突变，但是在原图投影过来的位置，依然是存在黑点，因此融合的结果中依然有黑点存在，因此需要使用反向warp
 
 //    imwrite("/Users/sheng/Desktop/dep3.png",target_img.dep_vec[0]);
 //    imwrite("/Users/sheng/Desktop/dep5.png",target_img.dep_vec[1]);

@@ -107,11 +107,12 @@ namespace fvv_tool
         // smooth depth image
         void smoothDepth(ImageFrame& img_frame, int k_size);
 
-        //fusing two rgb image
-        void fusingRgb(Mat& left_rgb, Mat& left_dep, Matrix<double,3,1>& left_T,
-                       Mat& right_rgb, Mat& right_dep,  Matrix<double,3,1>& right_T,
-                       Mat& vir_rgb, Matrix<double,3,1>& target_T);
+        void warpuv(Matrix4d& src_mp, Matrix4d& dst_mp, double src_u, double src_v, double* dst_u, double* dst_v, Mat& dep);
 
+        //fusing two rgb image
+        void fusingRgb(Mat& left_rgb, Mat& left_dep, Matrix4d& left_mp, Matrix<double,3,1>& left_T,
+                       Mat& right_rgb, Mat& right_dep, Matrix4d& right_mp, Matrix<double,3,1>& right_T,
+                       Mat& vir_rgb, Matrix4d& target_mp, Matrix<double,3,1>& target_T);
 
         // my god, in this paper, when we project depth or rgb image to a virtual image plane, rgb and depth
         // is uncorrelation  !!!!

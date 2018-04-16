@@ -336,6 +336,16 @@ ImageFrame* Tool::getCamFrame()
      return cali;
 }
 
+void Tool::warpuv(Matrix4d& src_mp, Matrix4d& dst_mp, double src_u, double src_v, double* dst_u, double* dst_v, Mat& depth)
+{
+    double z;
+    double dstu = 0.0, dstv = 0.0;
+    z = getPixelActualDepth(depth.at<Vec3b>(src_v,src_u)[0]);
+    projUVZtoXY(src_mp, src_u, src_v,z, &dstu, &dstv, depth.rows);
+    projXYZtoUV(dst_mp,dstu,dstv,z, dst_u, dst_v, depth.rows);
+
+}
+
 void Tool::forwardwarp(int src_camid, int dst_camid)
 {
 
@@ -492,14 +502,20 @@ void Tool::rendering(ImageFrame& img_frame)
     Matrix<double,3,1> right_T;
     Matrix<double,3,1> target_T;
 
+    Matrix4d left_mp, right_mp, target_mp;
+
     left_T = (cali[img_frame.proj_src_id[0]].mP).block(0,3,3,1);
     right_T = (cali[img_frame.proj_src_id[1]].mP).block(0,3,3,1);
     target_T = img_frame.mP.block(0,3,3,1);
 
-    Mat left_rgb = img_frame.rgb_vec[0];
+    left_mp = cali[img_frame.proj_src_id[0]].mP;
+    right_mp =  cali[img_frame.proj_src_id[1]].mP;
+    target_mp = img_frame.mP;
+
+    Mat left_rgb = cali[img_frame.proj_src_id[0]].rgb_vec[0];
     Mat left_dep = img_frame.dep_vec[0];
 
-    Mat right_rgb = img_frame.rgb_vec[1];
+    Mat right_rgb = cali[img_frame.proj_src_id[1]].rgb_vec[0];
     Mat right_dep = img_frame.dep_vec[1];
 
     Mat vir_rgb = Mat::zeros(left_rgb.rows, left_rgb.cols, CV_8UC3);
@@ -509,7 +525,7 @@ void Tool::rendering(ImageFrame& img_frame)
      *  get its rgb values
      *
      */
-    fusingRgb(left_rgb,left_dep, left_T, right_rgb,right_dep, right_T, vir_rgb, target_T );
+    fusingRgb(left_rgb,left_dep, left_mp, left_T, right_rgb,right_dep, right_mp, right_T, vir_rgb, target_mp, target_T );
 
 //    addWeighted(vir_rgb,0.5,cali[4].rgb,0.5,0,vir_rgb);
 //    imshow("target",cali[4].rgb);
@@ -548,9 +564,9 @@ void Tool::smoothDepth(ImageFrame& img_frame, int k_size)
  * output: virtual imahe plane rgb image
  */
 
-void Tool::fusingRgb(Mat &left_rgb, Mat &left_dep,  Matrix<double,3,1>& left_T,
-                     Mat &right_rgb, Mat &right_dep, Matrix<double,3,1>& right_T,
-                     Mat &target_rgb, Matrix<double,3,1>& target_T)
+void Tool::fusingRgb(Mat &left_rgb, Mat &left_dep, Matrix4d& left_mp, Matrix<double,3,1>& left_T,
+                     Mat &right_rgb, Mat &right_dep, Matrix4d& right_mp, Matrix<double,3,1>& right_T,
+                     Mat &target_rgb, Matrix4d& target_mp, Matrix<double,3,1>& target_T)
 {
     Array3d t1 = target_T - left_T;
     Array3d t2 = target_T - right_T;
@@ -560,29 +576,56 @@ void Tool::fusingRgb(Mat &left_rgb, Mat &left_dep,  Matrix<double,3,1>& left_T,
 
     double alpha = (sub_L)/(sub_L + sub_R);
 
+    double left_u = 0.0, left_v = 0.0, right_u = 0.0, right_v = 0.0 ;
+
     cout << "alpha: " << alpha << endl;
 
     for(int i = 0; i < left_rgb.rows; ++i)
     {
         for(int j = 0; j < left_rgb.cols; ++j)
         {
+
             if( left_dep.at<Vec3b>(i,j)[0] > 0 && right_dep.at<Vec3b>(i,j)[0] > 0 )
             {
+                // 这边计算反向投影的对应点
+
+                warpuv(target_mp, left_mp, (double)j, (double)i, &left_u, &left_v, left_dep);
+                warpuv(target_mp, right_mp, (double)j, (double)i, &right_u, &right_v, right_dep);
+
+                if( round(left_u) < 0 || round(left_u) > left_dep.cols || round(left_v) < 0 || round(left_v) >= left_dep.rows )
+                {
+                    continue;
+                }
+                if( round(right_u) < 0 || round(right_u) > left_dep.cols || round(right_v) < 0 || round(right_v) >= left_dep.rows )
+                {
+                    continue;
+                }
+
                 for(int ch = 0; ch < left_rgb.channels(); ++ch)
                 {
-                    target_rgb.at<Vec3b>(i,j)[ch] = (1-alpha) * left_rgb.at<Vec3b>(i,j)[ch] + alpha * right_rgb.at<Vec3b>(i,j)[ch];
+                    target_rgb.at<Vec3b>(i,j)[ch] = (1-alpha) * left_rgb.at<Vec3b>(round(left_v), round(left_u) )[ch] + alpha * right_rgb.at<Vec3b>(round(right_v), round(right_u))[ch];
                 }
             }else if(left_dep.at<Vec3b>(i,j)[0] == 0 && right_dep.at<Vec3b>(i,j)[0] >0 )
             {
+                warpuv(target_mp, right_mp, (double)j, (double)i, &right_u, &right_v, right_dep);
+                if( round(right_u) < 0 || round(right_u) > left_dep.cols || round(right_v) < 0 || round(right_v) >= left_dep.rows )
+                {
+                    continue;
+                }
                 for(int ch = 0; ch < left_rgb.channels(); ++ch)
                 {
-                    target_rgb.at<Vec3b>(i,j)[ch] = right_rgb.at<Vec3b>(i,j)[ch];
+                    target_rgb.at<Vec3b>(i,j)[ch] = right_rgb.at<Vec3b>(round(right_v), round(right_u))[ch];
                 }
             }else if( left_dep.at<Vec3b>(i,j)[0] > 0 && right_dep.at<Vec3b>(i,j)[0] == 0 )
             {
+                warpuv(target_mp, left_mp, (double)j, (double)i, &left_u, &left_v, left_dep);
+                if( round(left_u) < 0 || round(left_u) > left_dep.cols || round(left_v) < 0 || round(left_v) >= left_dep.rows )
+                {
+                    continue;
+                }
                 for(int ch = 0; ch < left_rgb.channels(); ++ch)
                 {
-                    target_rgb.at<Vec3b>(i,j)[ch] = left_rgb.at<Vec3b>(i,j)[ch];
+                    target_rgb.at<Vec3b>(i,j)[ch] = left_rgb.at<Vec3b>(round(left_v), round(left_u) )[ch];
                 }
             }else{
                 ;
@@ -590,6 +633,8 @@ void Tool::fusingRgb(Mat &left_rgb, Mat &left_dep,  Matrix<double,3,1>& left_T,
 
         }
     }
+
+
 }
 
 
