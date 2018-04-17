@@ -8,6 +8,7 @@
 #include "sstream"
 #include "vector"
 #include "string"
+#include "algorithm"
 
 //#include "pcl/point_types.h"
 //#include "pcl/io/pcd_io.h"
@@ -65,6 +66,10 @@ namespace fvv_tool
 
         vector< Mat> vir_img;
 
+        vector< Mat> frontground;
+        vector< Mat> background;
+
+
 
     };
 
@@ -102,6 +107,8 @@ namespace fvv_tool
         // rendering to novel viewpoint.
         void rendering(ImageFrame& img_frame);
 
+        void getFrontBackGround(int camid, int startIndex = 0, int endIndex = 1 );
+
         // smooth depth image
         void smoothDepth(ImageFrame& img_frame, int k_size);
 
@@ -110,6 +117,11 @@ namespace fvv_tool
         //fusing two rgb image
         void fusingRgb(Mat& left_rgb, Mat& left_dep, Matrix4d& left_mp, Matrix<double,3,1>& left_T,
                        Mat& right_rgb, Mat& right_dep, Matrix4d& right_mp, Matrix<double,3,1>& right_T,
+                       Mat& vir_rgb, Matrix4d& target_mp, Matrix<double,3,1>& target_T);
+
+        // new fusing rgb
+        void fusingRgb(Mat& left_rgb, Mat& left_dep, Mat& left_front, Mat& left_back, Matrix4d& left_mp, Matrix<double,3,1>& left_T,
+                       Mat& right_rgb, Mat& right_dep,Mat& right_front, Mat& right_back, Matrix4d& right_mp, Matrix<double,3,1>& right_T,
                        Mat& vir_rgb, Matrix4d& target_mp, Matrix<double,3,1>& target_T);
 
         void colorConsistency(Mat& left_img, Mat &right_img);

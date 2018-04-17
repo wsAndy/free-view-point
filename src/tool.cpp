@@ -569,17 +569,21 @@ void Tool::rendering(ImageFrame& img_frame)
 //    waitKey(0);
 
     colorConsistency(left_rgb, right_rgb);
-    /**
-     *  reproject the pixel on virtual image plane to left image and right image
-     *  get its rgb values
-     *
-     */
 
-    fusingRgb(left_rgb,left_dep, left_mp, left_T, right_rgb,right_dep, right_mp, right_T, vir_rgb, target_mp, target_T );
+    Mat left_front, left_back, right_front, right_back;
+
+    left_front = cali[ img_frame.proj_src_id[0] ].frontground[0];
+    left_back = cali[img_frame.proj_src_id[0]].background[0];
+
+    right_front = cali[img_frame.proj_src_id[1]].frontground[0];
+    right_back = cali[img_frame.proj_src_id[1]].background[0];
+
+//    fusingRgb(left_rgb,left_dep, left_mp, left_T, right_rgb,right_dep, right_mp, right_T, vir_rgb, target_mp, target_T );
+    fusingRgb(left_rgb,left_dep, left_front, left_back, left_mp, left_T, right_rgb,right_dep, right_front, right_back, right_mp, right_T, vir_rgb, target_mp, target_T );
 
 
     img_frame.vir_img.push_back(vir_rgb);
-    imwrite("/Users/sheng/Desktop/result.jpg",vir_rgb);
+//    imwrite("/Users/sheng/Desktop/result.jpg",vir_rgb);
 
     cout << "fusing rgb over." <<endl;
 
@@ -626,6 +630,73 @@ void Tool::smoothDepth(ImageFrame& img_frame, int k_size)
 //    }
 
 }
+
+
+void Tool::getFrontBackGround(int camid, int startIndex, int endIndex )
+{
+
+    Mat edge;
+    Mat dep_g;
+    for(int ind = startIndex; ind < endIndex; ++ind)
+    {
+        Mat dep = cali[camid].dep_vec[0];
+        Mat rgb = cali[camid].rgb_vec[0];
+        cvtColor(dep,dep_g,CV_BGR2GRAY);
+        Canny(dep_g,edge,80,255);
+
+        Mat frontground = Mat::zeros(edge.rows, edge.cols, CV_8UC3);
+        Mat background = Mat::zeros(edge.rows, edge.cols, CV_8UC3);
+
+        for(int i = 0; i < edge.rows; ++i)
+        {
+            for(int j = 0; j < edge.cols; ++j)
+            {
+                if( edge.at<uchar>(i,j) > 250 )
+                {
+                    if( getPixelActualDepth(dep.at<Vec3b>(i,j-1)[0]) > getPixelActualDepth(dep.at<Vec3b>(i,j+1)[0]) )
+                    {
+                        // j-1: background
+                        background.at<Vec3b>(i,j-1)[0] = 0;
+                        background.at<Vec3b>(i,j-1)[1] = 0;
+                        background.at<Vec3b>(i,j-1)[2] = 255;
+
+                        frontground.at<Vec3b>(i,j+1)[0] = 255;
+                        frontground.at<Vec3b>(i,j+1)[1] = 0;
+                        frontground.at<Vec3b>(i,j+1)[2] = 0;
+                    }else{
+                        // j+1: background
+                        background.at<Vec3b>(i,j+1)[0] = 0;
+                        background.at<Vec3b>(i,j+1)[1] = 0;
+                        background.at<Vec3b>(i,j+1)[2] = 255;
+
+                        frontground.at<Vec3b>(i,j-1)[0] = 255;
+                        frontground.at<Vec3b>(i,j-1)[1] = 0;
+                        frontground.at<Vec3b>(i,j-1)[2] = 0;
+                    }
+
+                    if(  getPixelActualDepth(dep.at<Vec3b>(i,j-1)[0]) + getPixelActualDepth(dep.at<Vec3b>(i,j+1)[0]) > 2*getPixelActualDepth(dep.at<Vec3b>(i,j)[0]) )
+                    {
+                        frontground.at<Vec3b>(i,j)[0] = 255;
+                        frontground.at<Vec3b>(i,j)[1] = 0;
+                        frontground.at<Vec3b>(i,j)[2] = 0;
+                    }else{
+                        background.at<Vec3b>(i,j)[0] = 0;
+                        background.at<Vec3b>(i,j)[1] = 0;
+                        background.at<Vec3b>(i,j)[2] = 255;
+                    }
+
+                }
+            }
+        }
+
+        cali[camid].background.push_back(background);
+        cali[camid].frontground.push_back(frontground);
+
+
+    }
+
+}
+
 
 /**
  * generate rgb image in novel viewpoint image plane
@@ -710,6 +781,142 @@ void Tool::fusingRgb(Mat &left_rgb, Mat &left_dep, Matrix4d& left_mp, Matrix<dou
 }
 */
 
+
+void Tool::fusingRgb(Mat& left_rgb, Mat& left_dep, Mat& left_front, Mat& left_back, Matrix4d& left_mp, Matrix<double,3,1>& left_T,
+               Mat& right_rgb, Mat& right_dep,Mat& right_front, Mat& right_back, Matrix4d& right_mp, Matrix<double,3,1>& right_T,
+               Mat& vir_rgb, Matrix4d& target_mp, Matrix<double,3,1>& target_T)
+{
+    Array3d t1 = target_T - left_T;
+    Array3d t2 = target_T - right_T;
+
+    double sub_L = sqrt(t1.square().sum());
+    double sub_R = sqrt(t2.square().sum());
+
+    double alpha = (sub_L)/(sub_L + sub_R);
+
+    double left_u = 0.0, left_v = 0.0, right_u = 0.0, right_v = 0.0 ;
+
+    cout << "alpha: " << alpha << endl;
+
+    Mat target_dep = Mat::zeros(left_rgb.rows, left_rgb.cols, CV_8UC3);
+    Mat target_back = Mat::zeros(left_rgb.rows, left_rgb.cols, CV_8UC3);
+
+    for(int i = 0; i < left_rgb.rows; ++i)
+    {
+        for(int j = 0; j < left_rgb.cols; ++j)
+        {
+
+            if( left_dep.at<Vec3b>(i,j)[0] > 0)
+            {
+                // 这边计算反向投影的对应点
+
+                warpuv(target_mp, left_mp, (double)j, (double)i, &left_u, &left_v, left_dep);
+
+                if( round(left_u) < 0 || round(left_u) > left_dep.cols || round(left_v) < 0 || round(left_v) >= left_dep.rows )
+                {
+                    continue;
+                }
+
+                for(int ch = 0; ch < left_rgb.channels(); ++ch)
+                {
+                    vir_rgb.at<Vec3b>(i,j)[ch] = left_rgb.at<Vec3b>(round(left_v), round(left_u) )[ch];
+                    target_dep.at<Vec3b>(i,j)[ch] = left_dep.at<Vec3b>(i,j)[ch];
+//                    if( left_front.at<Vec3b>(round(left_v), round(left_u))[0] > 250 )
+//                    {
+//                        target_dep.at<Vec3b>(i,j)[0] = 255;
+//                        target_dep.at<Vec3b>(i,j)[1] = 0;
+//                        target_dep.at<Vec3b>(i,j)[2] = 0;
+//                    }
+                    if( left_back.at<Vec3b>(round(left_v), round(left_u))[2] > 250 )
+                    {
+                        target_back.at<Vec3b>(i,j)[0] = 0;
+                        target_back.at<Vec3b>(i,j)[1] = 0;
+                        target_back.at<Vec3b>(i,j)[2] = 255;
+                    }
+                }
+
+
+            }else if(right_dep.at<Vec3b>(i,j)[0] >0 )
+            {
+                warpuv(target_mp, right_mp, (double)j, (double)i, &right_u, &right_v, right_dep);
+                if( round(right_u) < 0 || round(right_u) > left_dep.cols || round(right_v) < 0 || round(right_v) >= left_dep.rows )
+                {
+                    continue;
+                }
+                for(int ch = 0; ch < left_rgb.channels(); ++ch)
+                {
+                    vir_rgb.at<Vec3b>(i,j)[ch] = right_rgb.at<Vec3b>(round(right_v), round(right_u))[ch];
+                    target_dep.at<Vec3b>(i,j)[ch] = right_dep.at<Vec3b>(i,j)[ch];
+//                    if( right_front.at<Vec3b>(round(right_v), round(right_u))[0] > 250 )
+//                    {
+//                        target_dep.at<Vec3b>(i,j)[0] = 255;
+//                        target_dep.at<Vec3b>(i,j)[1] = 0;
+//                        target_dep.at<Vec3b>(i,j)[2] = 0;
+//                    }
+                    if( right_back.at<Vec3b>(round(right_v), round(right_u))[2] > 250 )
+                    {
+                        target_back.at<Vec3b>(i,j)[0] = 0;
+                        target_back.at<Vec3b>(i,j)[1] = 0;
+                        target_back.at<Vec3b>(i,j)[2] = 255;
+                    }
+
+                }
+            }else{
+                ;
+            }
+
+        }
+    }
+
+    imwrite("/Users/sheng/Desktop/result.png",vir_rgb);
+    imwrite("/Users/sheng/Desktop/target_dep.png",target_dep);
+    imwrite("/Users/sheng/Desktop/target_dep_back.png",target_back);
+
+
+    // 下面开始，在target_black中余下的点坐标周围，对vir_rgb做中值滤波
+
+    Mat bback ;
+    cvtColor(target_back, bback, CV_BGR2GRAY);
+    threshold(bback,bback,20,255,CV_THRESH_BINARY);
+    Mat element = getStructuringElement(MORPH_RECT, Size(3,3));
+    morphologyEx(bback,bback,MORPH_DILATE, element);
+
+    imwrite("/Users/sheng/Desktop/bback.png",bback);
+
+    for(int i = 2; i < bback.rows-2; ++i)
+    {
+        for(int j = 2; j < bback.cols-2; ++j)
+        {
+            if( bback.at<uchar>(i,j) > 100 )
+            {
+                // 在(i-2,j-2)-(i+2,j+2)之间做中值
+                for(int ch = 0; ch < vir_rgb.channels(); ++ch)
+                {
+                    vector<uchar> tmp_v;
+                    for(int ii = i -2; ii < i + 3; ++ii)
+                    {
+                        for(int jj = j -2; jj < j + 3; ++jj)
+                        {
+                            tmp_v.push_back( vir_rgb.at<Vec3b>(ii,jj)[ch] );
+                        }
+                    }
+                    std::sort(tmp_v.begin(), tmp_v.end());
+
+                    vir_rgb.at<Vec3b>(i,j)[ch] = tmp_v[ tmp_v.size()/2 ];
+
+                }
+            }
+        }
+    }
+
+    imwrite("/Users/sheng/Desktop/result2.png",vir_rgb);
+
+
+
+
+}
+
+
 /**
  * generate rgb image in novel viewpoint image plane
  *
@@ -733,6 +940,8 @@ void Tool::fusingRgb(Mat &left_rgb, Mat &left_dep, Matrix4d& left_mp, Matrix<dou
 
     cout << "alpha: " << alpha << endl;
 
+    Mat target_dep = Mat::zeros(left_rgb.rows, left_rgb.cols, CV_8UC3);
+
     for(int i = 0; i < left_rgb.rows; ++i)
     {
         for(int j = 0; j < left_rgb.cols; ++j)
@@ -752,7 +961,10 @@ void Tool::fusingRgb(Mat &left_rgb, Mat &left_dep, Matrix4d& left_mp, Matrix<dou
                 for(int ch = 0; ch < left_rgb.channels(); ++ch)
                 {
                     target_rgb.at<Vec3b>(i,j)[ch] = left_rgb.at<Vec3b>(round(left_v), round(left_u) )[ch];
+                    target_dep.at<Vec3b>(i,j)[ch] = left_dep.at<Vec3b>(i,j)[ch];
                 }
+
+
             }else if(right_dep.at<Vec3b>(i,j)[0] >0 )
             {
                 warpuv(target_mp, right_mp, (double)j, (double)i, &right_u, &right_v, right_dep);
@@ -763,6 +975,7 @@ void Tool::fusingRgb(Mat &left_rgb, Mat &left_dep, Matrix4d& left_mp, Matrix<dou
                 for(int ch = 0; ch < left_rgb.channels(); ++ch)
                 {
                     target_rgb.at<Vec3b>(i,j)[ch] = right_rgb.at<Vec3b>(round(right_v), round(right_u))[ch];
+                    target_dep.at<Vec3b>(i,j)[ch] = right_dep.at<Vec3b>(i,j)[ch];
                 }
             }else{
                 ;
@@ -770,6 +983,8 @@ void Tool::fusingRgb(Mat &left_rgb, Mat &left_dep, Matrix4d& left_mp, Matrix<dou
 
         }
     }
+
+    imwrite("/Users/sheng/Desktop/target_dep.png",target_dep);
 
 
 }
