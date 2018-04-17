@@ -126,6 +126,8 @@ namespace fvv_tool
 
         void colorConsistency(Mat& left_img, Mat &right_img);
 
+        void releaseImageFrame(ImageFrame& img);
+
         // id: image id that project.
         // startId: project which image from sequence? from 0 to  rgb_vec.size()-1
         // endId:   project which image from sequence? from 0 to  rgb_vec.size()-1

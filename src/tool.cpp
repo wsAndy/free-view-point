@@ -540,6 +540,25 @@ void Tool::colorConsistency(Mat& left_img, Mat &right_img)
 
 }
 
+void Tool::releaseImageFrame(ImageFrame& img)
+{
+
+    img.rgb_vec.clear();
+    img.dep_vec.clear();
+    for(int i = 0; i < img.pl_vec.size(); ++i)
+    {
+        img.pl_vec[i].pl.clear();
+    }
+    img.pl_vec.clear();
+    img.proj_src_id.clear();
+    img.pro_rgb.clear();
+    img.pro_dep.clear();
+    img.vir_img.clear();
+    img.frontground.clear();
+    img.background.clear();
+
+}
+
 void Tool::rendering(ImageFrame& img_frame)
 {
     // use two image
@@ -580,8 +599,6 @@ void Tool::rendering(ImageFrame& img_frame)
 
 //    fusingRgb(left_rgb,left_dep, left_mp, left_T, right_rgb,right_dep, right_mp, right_T, vir_rgb, target_mp, target_T );
     fusingRgb(left_rgb,left_dep, left_front, left_back, left_mp, left_T, right_rgb,right_dep, right_front, right_back, right_mp, right_T, vir_rgb, target_mp, target_T );
-
-
     img_frame.vir_img.push_back(vir_rgb);
 //    imwrite("/Users/sheng/Desktop/result.jpg",vir_rgb);
 
@@ -868,9 +885,9 @@ void Tool::fusingRgb(Mat& left_rgb, Mat& left_dep, Mat& left_front, Mat& left_ba
         }
     }
 
-    imwrite("/Users/sheng/Desktop/result.png",vir_rgb);
-    imwrite("/Users/sheng/Desktop/target_dep.png",target_dep);
-    imwrite("/Users/sheng/Desktop/target_dep_back.png",target_back);
+//    imwrite("/Users/sheng/Desktop/result.png",vir_rgb);
+//    imwrite("/Users/sheng/Desktop/target_dep.png",target_dep);
+//    imwrite("/Users/sheng/Desktop/target_dep_back.png",target_back);
 
 
     // 下面开始，在target_black中余下的点坐标周围，对vir_rgb做中值滤波
@@ -881,7 +898,7 @@ void Tool::fusingRgb(Mat& left_rgb, Mat& left_dep, Mat& left_front, Mat& left_ba
     Mat element = getStructuringElement(MORPH_RECT, Size(3,3));
     morphologyEx(bback,bback,MORPH_DILATE, element);
 
-    imwrite("/Users/sheng/Desktop/bback.png",bback);
+//    imwrite("/Users/sheng/Desktop/bback.png",bback);
 
     for(int i = 2; i < bback.rows-2; ++i)
     {
@@ -909,7 +926,8 @@ void Tool::fusingRgb(Mat& left_rgb, Mat& left_dep, Mat& left_front, Mat& left_ba
         }
     }
 
-    imwrite("/Users/sheng/Desktop/result2.png",vir_rgb);
+
+//    imwrite("/Users/sheng/Desktop/result2.png",vir_rgb);
 
 
 
