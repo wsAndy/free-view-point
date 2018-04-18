@@ -37,7 +37,7 @@ int main(int argc, char ** argv)
     camID.push_back(6);
     camID.push_back(7);
 
-    tool.loadImage(path,camID,0,1);// image's startIndex = 0, endIndex = 1 defaultly . < 100
+    tool.loadImage(path,camID,18,19);// image's startIndex = 0, endIndex = 1 defaultly . < 100
 
     // 这个是使用提供投影代码的测试
 //    tool.forwardwarp(3, 4);
@@ -67,7 +67,7 @@ int main(int argc, char ** argv)
     ImageFrame* cali = tool.getCamFrame();
 
     // 设定目标位姿
-    int list[8] = {0,1,2,3,4,5,6,7};
+    int list[8] = {0,1,2,3,4,5,6,7};//,6,7};
     for(int list_ind = 0; list_ind < 7; ++list_ind)
     {
         int left_cam_id = list[list_ind];
@@ -172,7 +172,7 @@ int main(int argc, char ** argv)
             ss << right_cam_id;
             ss << "_";
             ss << ind;
-            ss << ".jpg";
+            ss << "test.jpg";
             string ss_str;
             ss >> ss_str;
             imwrite(ss_str, target_img.vir_img[0]);

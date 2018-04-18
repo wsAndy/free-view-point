@@ -496,47 +496,64 @@ double Tool::getPixelDepth(double dw)
 
 void Tool::colorConsistency(Mat& left_img, Mat &right_img)
 {
-    Mat left_hsv, right_hsv;
-    cvtColor(left_img,left_hsv,CV_BGR2HSV);
-    cvtColor(right_img,right_hsv,CV_BGR2HSV);
-    Mat l_v[3], r_v[3];
-    split(left_hsv,l_v);
-    split(right_hsv,r_v);
-
-    double l_mean, l_std, r_mean, r_std, mean_, std_;
-    Mat mat_mean, mat_stddev;
-    meanStdDev(l_v[2], mat_mean, mat_stddev);
-    l_mean = mat_mean.at<double>(0,0);
-    l_std = mat_stddev.at<double>(0,0);
-
-    meanStdDev(r_v[2], mat_mean, mat_stddev);
-    r_mean = mat_mean.at<double>(0,0);
-    r_std = mat_stddev.at<double>(0,0);
-
-    mean_ = (l_mean + r_mean)/2.0;
-    std_ = (l_std + r_std)/2.0;
-
-    cout << "l_mean = " << l_mean << ", r_mean = " << r_mean << endl;
-    cout << "l_std = " << l_std << ", r_std = " << r_std << endl;
-
-    for(int i = 0; i < left_img.rows; ++i)
+    if( left_img.channels() != 3 )
     {
-        for(int j = 0; j < left_img.cols; ++j)
-        {
-            uchar val = left_hsv.at<Vec3b>(i,j)[2];
-            uchar new_val = val;
-            new_val = (uchar)( (val - l_mean)*std_/l_std + mean_ );
-            left_hsv.at<Vec3b>(i,j)[2] = new_val;
+        return ;
+    }
+    Mat left_hsv, right_hsv;
+    cvtColor(left_img,left_hsv,CV_BGR2YUV);
+    cvtColor(right_img,right_hsv,CV_BGR2YUV);
 
-            val = right_hsv.at<Vec3b>(i,j)[2];
-            new_val = val;
-            new_val = (uchar)( (val - r_mean)*std_/r_std + mean_ );
-            right_hsv.at<Vec3b>(i,j)[2] = new_val;
+    vector<Mat> left, right;
+    split(left_hsv, left);
+    split(right_hsv, right);
+
+
+    for(int ch = 0; ch < 3; ++ch)
+    {
+        Mat left_sin = left.at(ch);
+        Mat right_sin = right.at(ch);
+
+        cv::Scalar l_m, l_stddev,r_m, r_stddev;
+
+        cv::meanStdDev(left_sin, l_m, l_stddev);
+        cv::meanStdDev(right_sin, r_m, r_stddev);
+
+        double l_mean, l_std, r_mean, r_std, mean_, std_;
+        l_mean = l_m[0];
+        l_std = l_stddev[0];
+        r_mean = r_m[0];
+        r_std = r_stddev[0];
+
+        mean_ = (l_mean+r_mean)/2.0;
+        std_ = (l_std + r_std)/2.0;
+
+        for(int i = 0; i < left_sin.rows; ++i)
+        {
+            for(int j = 0; j < left_sin.cols; ++j)
+            {
+                uchar val = left_sin.at<uchar>(i,j);
+                uchar new_val = val;
+                new_val = (uchar)( (val-l_mean)*std_/l_std + mean_ );
+                left_sin.at<uchar>(i,j) = new_val;
+
+                val = right_sin.at<uchar>(i,j);
+                new_val = val;
+                new_val = (uchar)( (val-r_mean)*std_/r_std + mean_ );
+                right_sin.at<uchar>(i,j) = new_val;
+            }
         }
+
+        left.at(ch) = left_sin;
+        right.at(ch) = right_sin;
     }
 
-    cvtColor(left_hsv, left_img, CV_HSV2BGR);
-    cvtColor(right_hsv, right_img, CV_HSV2BGR);
+    Mat left_new, right_new;
+    merge(left,left_new);
+    merge(right,right_new);
+
+    cvtColor(left_new, left_img, CV_YUV2BGR);
+    cvtColor(right_new, right_img, CV_YUV2BGR);
 
 }
 
@@ -587,7 +604,8 @@ void Tool::rendering(ImageFrame& img_frame)
 
 //    waitKey(0);
 
-    colorConsistency(left_rgb, right_rgb);
+    // 下面颜色校正存在问题
+//    colorConsistency(left_rgb, right_rgb);
 
     Mat left_front, left_back, right_front, right_back;
 
@@ -599,6 +617,7 @@ void Tool::rendering(ImageFrame& img_frame)
 
 //    fusingRgb(left_rgb,left_dep, left_mp, left_T, right_rgb,right_dep, right_mp, right_T, vir_rgb, target_mp, target_T );
     fusingRgb(left_rgb,left_dep, left_front, left_back, left_mp, left_T, right_rgb,right_dep, right_front, right_back, right_mp, right_T, vir_rgb, target_mp, target_T );
+
     img_frame.vir_img.push_back(vir_rgb);
 //    imwrite("/Users/sheng/Desktop/result.jpg",vir_rgb);
 
@@ -666,7 +685,7 @@ void Tool::getFrontBackGround(int camid, int startIndex, int endIndex )
 
         for(int i = 0; i < edge.rows; ++i)
         {
-            for(int j = 0; j < edge.cols; ++j)
+            for(int j = 1; j < edge.cols-1; ++j)
             {
                 if( edge.at<uchar>(i,j) > 250 )
                 {
@@ -708,8 +727,6 @@ void Tool::getFrontBackGround(int camid, int startIndex, int endIndex )
 
         cali[camid].background.push_back(background);
         cali[camid].frontground.push_back(frontground);
-
-
     }
 
 }
@@ -829,7 +846,7 @@ void Tool::fusingRgb(Mat& left_rgb, Mat& left_dep, Mat& left_front, Mat& left_ba
 
                 warpuv(target_mp, left_mp, (double)j, (double)i, &left_u, &left_v, left_dep);
 
-                if( round(left_u) < 0 || round(left_u) > left_dep.cols || round(left_v) < 0 || round(left_v) >= left_dep.rows )
+                if( round(left_u) < 0 || round(left_u) >= left_dep.cols || round(left_v) < 0 || round(left_v) >= left_dep.rows )
                 {
                     continue;
                 }
@@ -856,7 +873,7 @@ void Tool::fusingRgb(Mat& left_rgb, Mat& left_dep, Mat& left_front, Mat& left_ba
             }else if(right_dep.at<Vec3b>(i,j)[0] >0 )
             {
                 warpuv(target_mp, right_mp, (double)j, (double)i, &right_u, &right_v, right_dep);
-                if( round(right_u) < 0 || round(right_u) > left_dep.cols || round(right_v) < 0 || round(right_v) >= left_dep.rows )
+                if( round(right_u) < 0 || round(right_u) >= left_dep.cols || round(right_v) < 0 || round(right_v) >= left_dep.rows )
                 {
                     continue;
                 }
@@ -971,7 +988,7 @@ void Tool::fusingRgb(Mat &left_rgb, Mat &left_dep, Matrix4d& left_mp, Matrix<dou
 
                 warpuv(target_mp, left_mp, (double)j, (double)i, &left_u, &left_v, left_dep);
 
-                if( round(left_u) < 0 || round(left_u) > left_dep.cols || round(left_v) < 0 || round(left_v) >= left_dep.rows )
+                if( round(left_u) < 0 || round(left_u) >= left_dep.cols || round(left_v) < 0 || round(left_v) >= left_dep.rows )
                 {
                     continue;
                 }
@@ -986,7 +1003,7 @@ void Tool::fusingRgb(Mat &left_rgb, Mat &left_dep, Matrix4d& left_mp, Matrix<dou
             }else if(right_dep.at<Vec3b>(i,j)[0] >0 )
             {
                 warpuv(target_mp, right_mp, (double)j, (double)i, &right_u, &right_v, right_dep);
-                if( round(right_u) < 0 || round(right_u) > left_dep.cols || round(right_v) < 0 || round(right_v) >= left_dep.rows )
+                if( round(right_u) < 0 || round(right_u) >= left_dep.cols || round(right_v) < 0 || round(right_v) >= left_dep.rows )
                 {
                     continue;
                 }
@@ -1031,234 +1048,3 @@ void Tool::applyBilateralFilter(Mat source, Mat filteredImage, int x, int y, int
     filteredImage.at<Vec3b>(x, y)[1] = round(iFiltered);
     filteredImage.at<Vec3b>(x, y)[2] = round(iFiltered);
 }
-
-
-/**
- *  here need to accelerate
- *
- *  project from UV (image coordinate ) to XYZ (3D space)
- *
- *
- *  Z_w * x = P * X
- *      UV       XYZ
- *
- *  input: rgb , dep
- *  output: cd_
- **/
-// this input dep is Vec3b ! not uchar
-//void Tool::projFromUVToXYZ(Mat &rgb, Mat &dep, int index, pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_)
-//{
-//    cd_->width = rgb.cols;
-//    cd_->height = rgb.rows;
-//    cd_->points.resize(cd_->width * cd_->height);
-
-//    for(int i = 0; i < cd_->height; ++i)
-//    {
-//        for(int j = 0; j < cd_->width; ++j)
-//        {
-
-//            double zc = getPixelActualDepth(dep.at<cv::Vec3b>(i,j)[0]); // actual depth
-//            int u = j;
-//            int v = i;
-
-////            cout << "depth: " << zc <<endl;
-
-//            Matrix4d p_in = (cali[index].mP).inverse();
-//            Vector4d x_(zc*u,zc*v,zc,1);
-//            Vector4d X_;
-//            X_ = p_in*x_;
-
-//            cd_->points[i*cd_->width+j].x = X_(0);
-//            cd_->points[i*cd_->width+j].y = X_(1);
-//            cd_->points[i*cd_->width+j].z = X_(2);
-
-//            cd_->points[i*cd_->width+j].r = rgb.at<cv::Vec3b>(i,j)[2];
-//            cd_->points[i*cd_->width+j].g = rgb.at<cv::Vec3b>(i,j)[1];
-//            cd_->points[i*cd_->width+j].b = rgb.at<cv::Vec3b>(i,j)[0];
-
-//        }
-
-//    }
-
-//}
-
-
-/**
- *  here need to accelerate
- *
- *  project from UV (image coordinate ) to XYZ (3D space)
- *
- *  only project depth
- *
- **/
-
-//void Tool::projFromUVToXYZ( Mat &dep, int index, pcl::PointCloud<pcl::PointXYZ>::Ptr cd_)
-//{
-//    cd_->width = dep.cols;
-//    cd_->height = dep.rows;
-//    cd_->points.resize(cd_->width * cd_->height);
-
-//    for(int i = 0; i < cd_->height; ++i)
-//    {
-//        for(int j = 0; j < cd_->width; ++j)
-//        {
-//            double zc = getPixelActualDepth(dep.at<cv::Vec3b>(i,j)[0]); // actual depth
-//            int u = j;
-//            int v = i;
-
-//            Matrix4d p_in = (cali[index].mP).inverse();
-//            Vector4d x_(zc*u,zc*v,zc,1);
-//            Vector4d X_;
-//            X_ = p_in*x_;
-
-//            cd_->points[i*cd_->width+j].x = X_(0);
-//            cd_->points[i*cd_->width+j].y = X_(1);
-//            cd_->points[i*cd_->width+j].z = X_(2);
-
-//        }
-
-//    }
-
-//}
-
-/**
- *  project from XYZ (3D world coordinate) to UV (image coordinate)
- *
- *  input: cd_
- *  output: rgb, dep
- */
-
-//void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cd_,
-//                           Eigen::Matrix4d & targetP,
-//                           Mat &rgb, Mat &dep,
-//                           std::vector<cv::Point>& vir_link_ori)
-//{
-//    // here you need to initial rgb and depth first since not all the pixel in these two image will be fixed.
-
-//    if(targetP.cols()!=4 || targetP.rows()!=4)
-//    {
-//        cerr << " targetP is not a [4x4] matrix!" <<endl;
-//    }else{
-//        // initial rgb and depth
-//        // TODO
-
-//        cout << "XYZRGB project UV .." <<endl;
-
-//        rgb = Mat::zeros(cd_->height,cd_->width,CV_8UC3);
-//        dep = Mat::zeros(cd_->height,cd_->width,CV_8UC1);
-
-//        for(int i = 0; i < cd_->height; ++i)
-//        {
-//            for(int j = 0 ; j < cd_->width; ++j)
-//            {
-//                Vector4d X_;
-//                X_(0) = cd_->points[i*cd_->width+j].x;
-//                X_(1) = cd_->points[i*cd_->width+j].y;
-//                X_(2) = cd_->points[i*cd_->width+j].z; // actual depth
-//                X_(3) = 1.0;
-
-//                double zc = X_(2);
-//                Vector4d x_;
-//                x_ = targetP*X_;
-
-//                if(zc < 0.2) // important in test.
-//                {
-//                    vir_link_ori.push_back(Point(-1,-1));
-//                    continue;
-//                }
-//                if(x_(0) < 0 || x_(1) < 0)
-//                {
-//                    vir_link_ori.push_back(Point(-1,-1));
-//                    continue;
-//                }
-
-//                rgb.at<cv::Vec3b>(int(x_(1)/zc),int(x_(0)/zc))[0] = cd_->points[i*cd_->width+j].b;
-//                rgb.at<cv::Vec3b>(int(x_(1)/zc),int(x_(0)/zc))[1] = cd_->points[i*cd_->width+j].g;
-//                rgb.at<cv::Vec3b>(int(x_(1)/zc),int(x_(0)/zc))[2] = cd_->points[i*cd_->width+j].r;
-
-//                dep.at<uchar>(int(x_(1)/zc),int(x_(0)/zc)) = getPixelDepth(zc);
-//            }
-//        }
-//        cout << "XYZRGB project to UV .. OK" <<endl;
-//    }
-
-//}
-
-
-
-/**
- *  project from XYZ (3D world coordinate) to UV (image coordinate)
- *
- *  input: cd_
- *  output: dep
- *
- *   only depth image
- */
-
-//void Tool::projFromXYZToUV(pcl::PointCloud<pcl::PointXYZ>::Ptr cd_,
-//                           Eigen::Matrix4d & targetP,
-//                           Mat &dep,
-//                           std::vector<cv::Point>& vir_link_ori)
-//{
-
-//    // here you need to initial rgb and depth first since not all the pixel in these two image will be fixed.
-
-//    if(targetP.cols()!=4 || targetP.rows()!=4)
-//    {
-//        cerr << " targetP is not a [4x4] matrix!" <<endl;
-//    }else{
-//        // initial depth
-//        // TODO
-
-//        // here, you should not clear it if it is empty.
-//        if(!vir_link_ori.empty())
-//        {
-//            vir_link_ori.clear();
-//        }
-
-//        cout << "Start project XYZ to UV.." <<endl;
-//        for(int i = 0; i < cd_->height; ++i)
-//        {
-//            for(int j = 0 ; j < cd_->width; ++j)
-//            {
-//                Vector4d X_;
-//                X_(0) = cd_->points[i*cd_->width+j].x;
-//                X_(1) = cd_->points[i*cd_->width+j].y;
-//                X_(2) = cd_->points[i*cd_->width+j].z; // actual depth
-//                X_(3) = 1.0;
-
-//                double zc = X_(2);
-//                Vector4d x_;
-//                x_ = targetP*X_;
-
-//                // these judge operate is every important !!!!
-//                // since the program will not stop if you locate a wide-point.
-//                // especially the third one.
-//                if(zc < 0.2) // important in test.
-//                {
-//                    vir_link_ori.push_back(Point(-1,-1));
-//                    continue;
-//                }
-
-//                if(x_(0) < 0 || x_(1) < 0)
-//                {
-//                    vir_link_ori.push_back(Point(-1,-1));
-//                    continue;
-//                }
-
-//                if( int(x_(1)/zc) >= dep.rows || int(x_(0)/zc) >= dep.cols)
-//                {
-//                    vir_link_ori.push_back(Point(-1,-1));
-//                    continue;
-//                }
-
-//                dep.at<uchar>(int(x_(1)/zc),int(x_(0)/zc)) = getPixelDepth(zc);
-
-//                vir_link_ori.push_back(Point(int(x_(0)/zc),int(x_(1)/zc)));
-//            }
-//        }
-
-//        cout << "XYZ project to UV .. OK" << endl;
-//    }
-
-//}
