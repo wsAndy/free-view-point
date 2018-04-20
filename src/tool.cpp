@@ -477,6 +477,9 @@ void Tool::generateP()
         rt(3,3) = 1.0;
         cali[k].RT = rt;
 
+        Vector3d pos = -1 * (rt.block<3,3>(0,0)).inverse() * rt.block<3,1>(0,3);
+        cali[k].pos = pos;
+
     }
 
     cout << "generate each camera's P, OK" <<endl;
@@ -554,6 +557,42 @@ void Tool::colorConsistency(Mat& left_img, Mat &right_img)
 
     cvtColor(left_new, left_img, CV_YUV2BGR);
     cvtColor(right_new, right_img, CV_YUV2BGR);
+
+}
+
+void Tool::findNearestCamId(Matrix4d& rt, int num, int& m1_, int& m2_)
+{
+    Vector3d pos = -1 * (rt.block<3,3>(0,0)).inverse() * (rt.block<3,1>(0,3));
+
+    double min_1 = 10000.0, min_2 = 10000.0;
+    int min_id1 = 0, min_id2 = 0;
+
+//    cout << "-----" <<endl;
+    for(int i = 0; i < num; ++i)
+    {
+        Matrix4d rt_ = cali[i].RT;
+        Vector3d pos_ = -1 * (rt_.block<3,3>(0,0)).inverse() * (rt_.block<3,1>(0,3));
+        double ll = distance(pos,pos_);
+//        cout << "i = " << i << ll << endl;
+        if( min_1 > ll )
+        {
+            min_2 = min_1;
+            min_1 = ll;
+            min_id2 = min_id1;
+            min_id1 = i;
+        }else if( min_2 > ll )
+        {
+            min_2 = ll;
+            min_id2 = i;
+        }
+
+//        cout << "min_id1 = " <<  min_id1 << ", min_id2 = " << min_id2 << endl;
+//        cout << "min = " << min_1 << ", min2 = " << min_2 << endl;
+
+    }
+//    cout << "====" << endl;
+    m1_ = min_id1;
+    m2_ = min_id2;
 
 }
 

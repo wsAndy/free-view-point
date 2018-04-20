@@ -49,6 +49,7 @@ namespace fvv_tool
         Matrix3d K;
         Matrix4d RT;
         Matrix4d mP;
+        Vector3d pos;
         // mP=[mK*mR mK*mT ]
         //    [ 0      1   ]
 
@@ -67,8 +68,7 @@ namespace fvv_tool
         vector< Mat> vir_img;
 
         vector< Mat> frontground;
-        vector< Mat> background;
-
+        vector< Mat> background;        
 
 
     };
@@ -144,7 +144,14 @@ namespace fvv_tool
             return exp(-(pow(x, 2))/(2 * pow(sigma, 2))) / (2 * CV_PI * pow(sigma, 2));
         }
 
+        double distance(Vector3d& pos1, Vector3d& pos2){
+            return sqrt( (pos1(0)-pos2(0))*(pos1(0)-pos2(0)) + (pos1(1)-pos2(1))*(pos1(1)-pos2(1)) + (pos1(2)-pos2(2))*(pos1(2)-pos2(2)) );
+
+        }
+
         void applyBilateralFilter(Mat source, Mat filteredImage, int x, int y, int diameter, double sigmaI, double sigmaS);
+
+        void findNearestCamId(Matrix4d& rt, int num, int& m1_, int& m2_);
 
 
         ImageFrame* cali;

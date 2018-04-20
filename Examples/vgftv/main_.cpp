@@ -73,64 +73,60 @@ int main(int argc, char ** argv)
     }
     mean_y = mean_y / 8.0;
 
-//    Matrix3d K_mean;
-//    K_mean = cali[0].K;
-//    for(int k_ind = 1; k_ind < 8; ++k_ind)
-//    {
-//        K_mean = K_mean + cali[k_ind].K;
-//    }
-//    K_mean = K_mean / 8;
+
+
+
+
 
     // 设定目标位姿
-    int list[8] = {0,1,2,3,4,5,6,7};//,6,7};
-    for(int list_ind = 0; list_ind < 7; ++list_ind)
-    {
-        int left_cam_id = list[list_ind];
-        int right_cam_id = list[list_ind+1];
-
-        Matrix4d tmp_left_rt, tmp_right_rt;
-        Matrix3d tmp_left_r, tmp_right_r;
-        Vector3d tmp_left_t,tmp_right_t;
-
-        tmp_left_rt = cali[left_cam_id].RT;
-        tmp_right_rt = cali[right_cam_id].RT;
-        tmp_left_r = tmp_left_rt.block<3,3>(0,0);
-        tmp_left_t = tmp_left_rt.block<3,1>(0,3);
-
-        tmp_right_r = tmp_right_rt.block<3,3>(0,0);
-        tmp_right_t = tmp_right_rt.block<3,1>(0,3);
-
-        Vector3d left_pos = -1* tmp_left_r.inverse() * tmp_left_t;
-        Vector3d right_pos = -1* tmp_right_r.inverse() * tmp_right_t;
-
-        Matrix3d tmp_r1r2;
-        tmp_r1r2 = tmp_right_r * tmp_left_r.inverse();
 
 
-        cv::Matx33d tmp_R;
-        cv::Vec3d tmp_om;
-        tmp_R(0,0) = tmp_r1r2(0,0);tmp_R(0,1) = tmp_r1r2(0,1);tmp_R(0,2) = tmp_r1r2(0,2);
-        tmp_R(1,0) = tmp_r1r2(1,0);tmp_R(1,1) = tmp_r1r2(1,1);tmp_R(1,2) = tmp_r1r2(1,2);
-        tmp_R(2,0) = tmp_r1r2(2,0);tmp_R(2,1) = tmp_r1r2(2,1);tmp_R(2,2) = tmp_r1r2(2,2);
 
 
-        Rodrigues(tmp_R, tmp_om);
-        Vector3d om;
-        om(0) = tmp_om(0);
-        om(1) = tmp_om(1);
-        om(2) = tmp_om(2);
+    Matrix4d tmp_left_rt, tmp_right_rt;
+    Matrix3d tmp_left_r, tmp_right_r;
+    Vector3d tmp_left_t,tmp_right_t;
+
+    tmp_left_rt = cali[0].RT;
+    tmp_right_rt = cali[7].RT;
+    tmp_left_r = tmp_left_rt.block<3,3>(0,0);
+    tmp_left_t = tmp_left_rt.block<3,1>(0,3);
+
+    tmp_right_r = tmp_right_rt.block<3,3>(0,0);
+    tmp_right_t = tmp_right_rt.block<3,1>(0,3);
+
+    Vector3d left_pos = -1* tmp_left_r.inverse() * tmp_left_t;
+    Vector3d right_pos = -1* tmp_right_r.inverse() * tmp_right_t;
+
+    Matrix3d tmp_r1r2;
+    tmp_r1r2 = tmp_right_r * tmp_left_r.inverse();
+
+
+    cv::Matx33d tmp_R;
+    cv::Vec3d tmp_om;
+    tmp_R(0,0) = tmp_r1r2(0,0);tmp_R(0,1) = tmp_r1r2(0,1);tmp_R(0,2) = tmp_r1r2(0,2);
+    tmp_R(1,0) = tmp_r1r2(1,0);tmp_R(1,1) = tmp_r1r2(1,1);tmp_R(1,2) = tmp_r1r2(1,2);
+    tmp_R(2,0) = tmp_r1r2(2,0);tmp_R(2,1) = tmp_r1r2(2,1);tmp_R(2,2) = tmp_r1r2(2,2);
+
+
+    Rodrigues(tmp_R, tmp_om);
+    Vector3d om;
+    om(0) = tmp_om(0);
+    om(1) = tmp_om(1);
+    om(2) = tmp_om(2);
 
 //        cout << "left_cam_id = " << endl << cali[left_cam_id].pos << endl;
 //        cout << "right_cam_id = " << endl << cali[right_cam_id].pos << endl;
 
-        for(int ind = 1; ind <= 15; ++ind)
+    这个的实验效果，很差！
+        for(int ind = 1; ind <=210; ++ind)
         {
             Matrix3d now_R;
             Vector3d now_T;
             cv::Matx33d now_R_mat;
-            Vector3d pos = left_pos+( right_pos - left_pos )*ind/(16);
-            pos(1) = mean_y;
-            Vector3d om_in = om*ind/16.0;
+            Vector3d pos = left_pos+( right_pos - left_pos )*ind/(210);
+//            pos(1) = mean_y;
+            Vector3d om_in = om*ind/210.0;
             cv::Vec3d om_in_mat;
 
 //            cout << "now [" << ind << "] pos = " << pos << endl;
@@ -156,24 +152,27 @@ int main(int argc, char ** argv)
             rt(3,2) = 0;
             rt(3,3) = 1;
 
-            // int near_cam_id = tool.findNearestCamId(rt, left_cam_id, right_cam_id);
-
-
-            Matrix3d K_mean = MatrixXd::Zero(3,3);
-
-
-            double d1 =  tool.distance(cali[left_cam_id].pos, pos);
-            double d2 =  tool.distance(cali[right_cam_id].pos, pos);
-
-            K_mean = (d2/(d1+d2))*cali[left_cam_id].K + (d1/(d1+d2))*cali[right_cam_id].K;
-
             Matrix4d mp;
-            mp.block<3,3>(0,0) = K_mean * now_R;
-            mp.block<3,1>(0,3) = K_mean * now_T;
+            mp.block<3,3>(0,0) = cali[0].K * now_R;
+            mp.block<3,1>(0,3) = cali[0].K * now_T;
             mp(3,0) = 0;
             mp(3,1) = 0;
             mp(3,2) = 0;
             mp(3,3) = 1;
+
+            int left_cam_id = 0, right_cam_id = 0;
+//            cout << ind << endl;
+            tool.findNearestCamId(rt, 8, left_cam_id, right_cam_id);
+
+//            cout << left_cam_id << ","<<right_cam_id<<endl;
+
+            if( left_cam_id > right_cam_id )
+            {
+                right_cam_id = right_cam_id + left_cam_id;
+                left_cam_id = right_cam_id - left_cam_id;
+                right_cam_id = right_cam_id - left_cam_id;
+            }
+
 
 //            cout << "----"<< ind <<"-----" << endl;
 //            cout << "left_rt" << endl;
@@ -197,11 +196,12 @@ int main(int argc, char ** argv)
 
             stringstream ss;
             ss << "/Users/sheng/Desktop/img/";
+
+            ss << ind;
+            ss << "_";
             ss << left_cam_id;
             ss << "_";
             ss << right_cam_id;
-            ss << "_";
-            ss << ind;
             ss << "test.jpg";
             string ss_str;
             ss >> ss_str;
@@ -211,7 +211,6 @@ int main(int argc, char ** argv)
             ss.clear();
             tool.releaseImageFrame(target_img);
         }
-    }
 
     return 0;
 }
