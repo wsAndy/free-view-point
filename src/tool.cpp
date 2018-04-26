@@ -88,7 +88,7 @@ void Tool::projUVtoXYZ(int id ,int startInd, int endInd)
 {
     for(int i = startInd; i < endInd; ++i)
     {
-        pointcloud pl_;
+        pointcloud pl_, pl_f,pl_g;
         Mat dep = cali[id].dep_vec[i];
         Mat rgb = cali[id].rgb_vec[i];
 
@@ -96,6 +96,8 @@ void Tool::projUVtoXYZ(int id ,int startInd, int endInd)
         int width = dep.cols;
         pl_.height = height;
         pl_.width = width;
+
+
 
         Matrix4d mp = cali[id].mP;
 
@@ -123,9 +125,6 @@ void Tool::projUVtoXYZ(int id ,int startInd, int endInd)
                 x = y*(mp(0,1)-u*mp(2,1)) + c0 - c2*u;
                 x/= mp(2,0)*u - mp(0,0);
 
-
-
-
                 point pp;
                 pp.x = x;
                 pp.y = y;
@@ -140,6 +139,7 @@ void Tool::projUVtoXYZ(int id ,int startInd, int endInd)
         }
         cali[id].pl_vec.push_back(pl_);
     }
+
 
 }
 
@@ -320,9 +320,22 @@ void Tool::loadImageParameter(char* file_name)
                        &(cali[camIdx].mT[i]));
 
             }
+
+//            double t1,t2,t3;
+//            t1 = cali[camIdx].mT[0];
+//            t2 = cali[camIdx].mT[1];
+//            t3 = cali[camIdx].mT[2];
+
+//            cali[camIdx].mT[0] = -1*(cali[camIdx].mR[0][0]*t1 + cali[camIdx].mR[0][1]*t2 + cali[camIdx].mR[0][2]*t3);
+//            cali[camIdx].mT[1] = -1*(cali[camIdx].mR[1][0]*t1 + cali[camIdx].mR[1][1]*t2 + cali[camIdx].mR[1][2]*t3);
+//            cali[camIdx].mT[2] = -1*(cali[camIdx].mR[2][0]*t1 + cali[camIdx].mR[2][1]*t2 + cali[camIdx].mR[2][2]*t3);
+
+
         }
 
         fclose(f_read);
+
+
 
         cout << "load OK." <<endl;
 

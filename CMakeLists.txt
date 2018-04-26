@@ -58,10 +58,13 @@ add_executable(ftv
 Examples/vgftv/main.cpp)
 target_link_libraries(ftv ${PROJECT_NAME})
 
-add_executable(ftv_test
-Examples/vgftv/main_test.cpp)
-target_link_libraries(ftv ${PROJECT_NAME})
-
 add_executable( tt
 Examples/vgftv/tt.cpp)
 target_link_libraries(tt ${PROJECT_NAME})
+
+
+add_executable( main_backfront
+Examples/vgftv/main_backfront.cpp)
+target_link_libraries(main_backfront ${PROJECT_NAME})
+
+

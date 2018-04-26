@@ -10,13 +10,7 @@
 #include "string"
 #include "algorithm"
 
-//#include "pcl/point_types.h"
-//#include "pcl/io/pcd_io.h"
-//#include "pcl/visualization/cloud_viewer.h"
-//#include "pcl/visualization/boost.h"
-
 #include "opencv2/opencv.hpp"
-//#include "opencv2/core/eigen.hpp"
 
 #include "eigen3/Eigen/Dense"
 #include "eigen3/Eigen/Core"
@@ -59,6 +53,7 @@ namespace fvv_tool
         vector<Mat> dep_vec; // 该值是世界坐标系的深度
 //        vector<Mat> xyt_vec;
         vector<pointcloud> pl_vec; // 在世界坐标系中的值
+
         vector<int> proj_src_id; // 对一个特定位置而言，投影了哪一些id的图像，对应在投影位置的rgb_vec与dep_vec,如果一次就有同一个camid的多个序列位置的投影....哎乱了
 
         // 下面这两个还没有使用
@@ -107,6 +102,7 @@ namespace fvv_tool
         // rendering to novel viewpoint.
         void rendering(ImageFrame& img_frame);
 
+        // get frontground and background
         void getFrontBackGround(int camid, int startIndex = 0, int endIndex = 1 );
 
         // smooth depth image
@@ -124,6 +120,8 @@ namespace fvv_tool
                        Mat& right_rgb, Mat& right_dep,Mat& right_front, Mat& right_back, Matrix4d& right_mp, Matrix<double,3,1>& right_T,
                        Mat& vir_rgb, Matrix4d& target_mp, Matrix<double,3,1>& target_T);
 
+        // TODO:
+        // !!!!!!   this function is not used , have BUGS   !!!!!!
         void colorConsistency(Mat& left_img, Mat &right_img);
 
         void releaseImageFrame(ImageFrame& img);

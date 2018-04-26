@@ -1,5 +1,5 @@
 #include "tool.h"
-
+#include "fstream"
 
 using namespace std;
 using namespace cv;
@@ -16,6 +16,12 @@ void test(Tool& );
 // right ---  left
 int main(int argc, char ** argv)
 {
+
+    ofstream ou;
+    ou.open("/Users/sheng/Desktop/pos/pos.txt");
+
+
+
     int camera_num = 8;
     Tool tool; // Tool tool("ballet",8);
 
@@ -43,15 +49,6 @@ int main(int argc, char ** argv)
 //    tool.forwardwarp(3, 4);
 //    tool.forwardwarp(5, 4);
 
-    tool.projUVtoXYZ(0,0,1);
-    tool.projUVtoXYZ(1,0,1); // 0,1 in vector id
-    tool.projUVtoXYZ(2,0,1);
-    tool.projUVtoXYZ(3,0,1);
-    tool.projUVtoXYZ(4,0,1);
-    tool.projUVtoXYZ(5,0,1);
-    tool.projUVtoXYZ(6,0,1);
-    tool.projUVtoXYZ(7,0,1);
-
     tool.getFrontBackGround(0,0,1);
     tool.getFrontBackGround(1,0,1);
     tool.getFrontBackGround(2,0,1);
@@ -61,17 +58,28 @@ int main(int argc, char ** argv)
     tool.getFrontBackGround(6,0,1);
     tool.getFrontBackGround(7,0,1);
 
+    tool.projUVtoXYZ(0,0,1);
+    tool.projUVtoXYZ(1,0,1); // 0,1 in vector id
+    tool.projUVtoXYZ(2,0,1);
+    tool.projUVtoXYZ(3,0,1);
+    tool.projUVtoXYZ(4,0,1);
+    tool.projUVtoXYZ(5,0,1);
+    tool.projUVtoXYZ(6,0,1);
+    tool.projUVtoXYZ(7,0,1);
+
+
+
 //    tool.writePLY("/Users/sheng/Desktop/free-view-point/pl3.ply",tool.cali[3].pl_vec[0]);
 //    tool.writePLY("/Users/sheng/Desktop/free-view-point/pl5.ply",tool.cali[5].pl_vec[0]);
 
     ImageFrame* cali = tool.getCamFrame();
 
-    double mean_y = 0.0;
-    for(int y_ind = 0; y_ind < 8; ++y_ind)
-    {
-        mean_y += cali[y_ind].pos(1);
-    }
-    mean_y = mean_y / 8.0;
+//    double mean_y = 0.0;
+//    for(int y_ind = 0; y_ind < 8; ++y_ind)
+//    {
+//        mean_y += cali[y_ind].pos(1);
+//    }
+//    mean_y = mean_y / 8.0;
 
 //    Matrix3d K_mean;
 //    K_mean = cali[0].K;
@@ -82,7 +90,7 @@ int main(int argc, char ** argv)
 //    K_mean = K_mean / 8;
 
     // 设定目标位姿
-    int list[8] = {0,1,2,3,4,5,6,7};//,6,7};
+    int list[8] = {0,1,2,3,4,5,6,7};
     for(int list_ind = 0; list_ind < 7; ++list_ind)
     {
         int left_cam_id = list[list_ind];
@@ -106,7 +114,6 @@ int main(int argc, char ** argv)
         Matrix3d tmp_r1r2;
         tmp_r1r2 = tmp_right_r * tmp_left_r.inverse();
 
-
         cv::Matx33d tmp_R;
         cv::Vec3d tmp_om;
         tmp_R(0,0) = tmp_r1r2(0,0);tmp_R(0,1) = tmp_r1r2(0,1);tmp_R(0,2) = tmp_r1r2(0,2);
@@ -123,22 +130,19 @@ int main(int argc, char ** argv)
 //        cout << "left_cam_id = " << endl << cali[left_cam_id].pos << endl;
 //        cout << "right_cam_id = " << endl << cali[right_cam_id].pos << endl;
 
-        for(int ind = 1; ind <= 15; ++ind)
+        for(int ind = 1; ind <= 10; ++ind)
         {
+
             Matrix3d now_R;
             Vector3d now_T;
             cv::Matx33d now_R_mat;
-            Vector3d pos = left_pos+( right_pos - left_pos )*ind/(16);
-            pos(1) = mean_y;
-            Vector3d om_in = om*ind/16.0;
-            cv::Vec3d om_in_mat;
+            Vector3d pos = left_pos+( right_pos - left_pos )*ind/(10);
 
-//            cout << "now [" << ind << "] pos = " << pos << endl;
+            Vector3d om_in = om*ind/10.0;
+            cv::Vec3d om_in_mat;
 
             om_in_mat(0) = om_in(0); om_in_mat(1) = om_in(1); om_in_mat(2) = om_in(2);
             Rodrigues(om_in_mat, now_R_mat);
-
-//            cout << now_R_mat << endl;
 
             now_R(0,0) = now_R_mat(0,0);now_R(0,1) = now_R_mat(0,1);now_R(0,2) = now_R_mat(0,2);
             now_R(1,0) = now_R_mat(1,0);now_R(1,1) = now_R_mat(1,1);now_R(1,2) = now_R_mat(1,2);
@@ -148,6 +152,17 @@ int main(int argc, char ** argv)
 
             now_T = -1*now_R*pos;
 
+
+//            cout << "now_T = " << now_T << endl; // 感觉上面个增稳是错误的，因为基本无效，而且上面只是在平均，这边才是实际增加
+
+//            now_T(0) = now_T(0) + 4; // 镜头右移-》偏向left右侧！
+//            now_T(1) = now_T(1) + 4; // 镜头下移
+//            now_T(2) = now_T(2) + 10; // 镜头后移
+// 可以判断是左手坐标系
+//            now_T(2) = now_T(2) - 10;
+
+//            now_T(1) = 0; //========
+
             Matrix4d rt;
             rt.block<3,3>(0,0) = now_R;
             rt.block<3,1>(0,3) = now_T;
@@ -156,7 +171,10 @@ int main(int argc, char ** argv)
             rt(3,2) = 0;
             rt(3,3) = 1;
 
-            // int near_cam_id = tool.findNearestCamId(rt, left_cam_id, right_cam_id);
+            ou << now_R(0,0) << " " <<  now_R(0,1) << " "  << now_R(0,2) << endl;
+            ou << now_R(1,0) << " " <<  now_R(1,1) << " "  << now_R(1,2) << endl;
+            ou << now_R(2,0) << " " <<  now_R(2,1) << " "  << now_R(2,2) << endl;
+            ou << now_T(0) << " " <<  now_T(1) << " "  << now_T(2) << endl;
 
 
             Matrix3d K_mean = MatrixXd::Zero(3,3);
@@ -164,8 +182,52 @@ int main(int argc, char ** argv)
 
             double d1 =  tool.distance(cali[left_cam_id].pos, pos);
             double d2 =  tool.distance(cali[right_cam_id].pos, pos);
+            double d3 = 0.0;
 
-            K_mean = (d2/(d1+d2))*cali[left_cam_id].K + (d1/(d1+d2))*cali[right_cam_id].K;
+            double d3_1 = -1.0, d3_2 = -1.0;
+            if( left_cam_id > 0 )
+            {
+                d3_1 = tool.distance(cali[left_cam_id-1].pos, pos);
+            }
+            if( right_cam_id < 7 )
+            {
+                d3_2 = tool.distance(cali[right_cam_id+1].pos, pos);
+            }
+
+            if( d3_1 > 0 && d3_1 < d3_2 )
+            {
+                d3 = d3_1;
+            }
+
+            if( d3_2 > 0 && d3_2 < d3_1 )
+            {
+                d3 = d3_2;
+            }
+
+            if(abs(d3 - d3_1)<1e-4 )
+            {
+                K_mean = ( (d2+d3)/(d1+d2+d3))*cali[left_cam_id].K + ((d1+d3)/(d1+d2+d3))*cali[right_cam_id].K + ((d1+d2)/(d1+d2+d3))*cali[left_cam_id-1].K;
+                K_mean /= 2;
+//                cout << "cali[left_cam_id].K = " << cali[left_cam_id].K<<endl;
+//                cout << "cali[right_cam_id].K = " << cali[right_cam_id].K << endl;
+//                cout << "cali[left_cam_id-1].K = " << cali[left_cam_id-1].K << endl;
+            }else{
+                K_mean =  ( (d2+d3)/(d1+d2+d3))*cali[left_cam_id].K + ((d1+d3)/(d1+d2+d3))*cali[right_cam_id].K + ((d1+d2)/(d1+d2+d3))*cali[right_cam_id+1].K;
+                K_mean /= 2;
+//                cout << "cali[left_cam_id].K = " << cali[left_cam_id].K<<endl;
+//                cout << "cali[right_cam_id].K = " << cali[right_cam_id].K << endl;
+//                cout << "cali[right_cam_id+1].K = " << cali[right_cam_id+1].K << endl;
+            }
+
+            if( right_cam_id == 7 )
+            {
+                K_mean = (d2/(d1+d2))*cali[left_cam_id].K + (d1/(d1+d2))*cali[right_cam_id].K;
+            }
+
+//            cout << "K_mean = " << K_mean << endl;
+
+
+//            K_mean = (d2/(d1+d2))*cali[left_cam_id].K + (d1/(d1+d2))*cali[right_cam_id].K;
 
             Matrix4d mp;
             mp.block<3,3>(0,0) = K_mean * now_R;
@@ -174,16 +236,6 @@ int main(int argc, char ** argv)
             mp(3,1) = 0;
             mp(3,2) = 0;
             mp(3,3) = 1;
-
-//            cout << "----"<< ind <<"-----" << endl;
-//            cout << "left_rt" << endl;
-//            cout << cali[0].RT << endl;
-//            cout << "pos_r" << endl;
-//            cout << now_R << endl;
-//            cout << "pos_t" << endl;
-//            cout << now_T << endl;
-//            cout << "========" << endl;
-
 
             ImageFrame target_img;
             target_img.mP = mp;
@@ -212,6 +264,8 @@ int main(int argc, char ** argv)
             tool.releaseImageFrame(target_img);
         }
     }
+
+    ou.close();
 
     return 0;
 }
