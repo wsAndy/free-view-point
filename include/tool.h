@@ -24,9 +24,12 @@ using namespace Eigen;
 // and it might not work well for video stream since there is no accelerate or multi-thread.
 namespace fvv_tool
 {
+enum main_front_back{ mainground = 1, frontground, background };
     struct point{
         int r,g,b;
         double x,y,z;
+        main_front_back address;
+
     };
     struct pointcloud{
       int height;
@@ -100,7 +103,7 @@ namespace fvv_tool
         double getPixelDepth(double dw);
 
         // rendering to novel viewpoint.
-        void rendering(ImageFrame& img_frame);
+        void rendering(ImageFrame& img_frame, double d1, double d2);
 
         // get frontground and background
         void getFrontBackGround(int camid, int startIndex = 0, int endIndex = 1 );

@@ -182,52 +182,59 @@ int main(int argc, char ** argv)
 
             double d1 =  tool.distance(cali[left_cam_id].pos, pos);
             double d2 =  tool.distance(cali[right_cam_id].pos, pos);
-            double d3 = 0.0;
 
-            double d3_1 = -1.0, d3_2 = -1.0;
-            if( left_cam_id > 0 )
-            {
-                d3_1 = tool.distance(cali[left_cam_id-1].pos, pos);
-            }
-            if( right_cam_id < 7 )
-            {
-                d3_2 = tool.distance(cali[right_cam_id+1].pos, pos);
-            }
+//            double d3 = 0.0;
 
-            if( d3_1 > 0 && d3_1 < d3_2 )
-            {
-                d3 = d3_1;
-            }
+//            double d3_1 = -1.0, d3_2 = -1.0;
+//            if( left_cam_id > 0 )
+//            {
+//                d3_1 = tool.distance(cali[left_cam_id-1].pos, pos);
+//            }
+//            if( right_cam_id < 7 )
+//            {
+//                d3_2 = tool.distance(cali[right_cam_id+1].pos, pos);
+//            }
 
-            if( d3_2 > 0 && d3_2 < d3_1 )
-            {
-                d3 = d3_2;
-            }
+//            if( d3_1 > 0 && d3_1 < d3_2 )
+//            {
+//                d3 = d3_1;
+//            }
 
-            if(abs(d3 - d3_1)<1e-4 )
-            {
-                K_mean = ( (d2+d3)/(d1+d2+d3))*cali[left_cam_id].K + ((d1+d3)/(d1+d2+d3))*cali[right_cam_id].K + ((d1+d2)/(d1+d2+d3))*cali[left_cam_id-1].K;
-                K_mean /= 2;
-//                cout << "cali[left_cam_id].K = " << cali[left_cam_id].K<<endl;
-//                cout << "cali[right_cam_id].K = " << cali[right_cam_id].K << endl;
-//                cout << "cali[left_cam_id-1].K = " << cali[left_cam_id-1].K << endl;
-            }else{
-                K_mean =  ( (d2+d3)/(d1+d2+d3))*cali[left_cam_id].K + ((d1+d3)/(d1+d2+d3))*cali[right_cam_id].K + ((d1+d2)/(d1+d2+d3))*cali[right_cam_id+1].K;
-                K_mean /= 2;
-//                cout << "cali[left_cam_id].K = " << cali[left_cam_id].K<<endl;
-//                cout << "cali[right_cam_id].K = " << cali[right_cam_id].K << endl;
-//                cout << "cali[right_cam_id+1].K = " << cali[right_cam_id+1].K << endl;
-            }
+//            if( d3_2 > 0 && d3_2 < d3_1 )
+//            {
+//                d3 = d3_2;
+//            }
 
-            if( right_cam_id == 7 )
-            {
-                K_mean = (d2/(d1+d2))*cali[left_cam_id].K + (d1/(d1+d2))*cali[right_cam_id].K;
-            }
+//            if(abs(d3 - d3_1)<1e-4 )
+//            {
+//                K_mean = ( (d2+d3)/(d1+d2+d3))*cali[left_cam_id].K + ((d1+d3)/(d1+d2+d3))*cali[right_cam_id].K + ((d1+d2)/(d1+d2+d3))*cali[left_cam_id-1].K;
+//                K_mean /= 2;
+////                cout << "cali[left_cam_id].K = " << cali[left_cam_id].K<<endl;
+////                cout << "cali[right_cam_id].K = " << cali[right_cam_id].K << endl;
+////                cout << "cali[left_cam_id-1].K = " << cali[left_cam_id-1].K << endl;
+//            }else{
+//                K_mean =  ( (d2+d3)/(d1+d2+d3))*cali[left_cam_id].K + ((d1+d3)/(d1+d2+d3))*cali[right_cam_id].K + ((d1+d2)/(d1+d2+d3))*cali[right_cam_id+1].K;
+//                K_mean /= 2;
+////                cout << "cali[left_cam_id].K = " << cali[left_cam_id].K<<endl;
+////                cout << "cali[right_cam_id].K = " << cali[right_cam_id].K << endl;
+////                cout << "cali[right_cam_id+1].K = " << cali[right_cam_id+1].K << endl;
+//            }
+
+//            if( right_cam_id == 7 )
+//            {
+//                K_mean = (d2/(d1+d2))*cali[left_cam_id].K + (d1/(d1+d2))*cali[right_cam_id].K;
+//            }
+
 
 //            cout << "K_mean = " << K_mean << endl;
 
 
-//            K_mean = (d2/(d1+d2))*cali[left_cam_id].K + (d1/(d1+d2))*cali[right_cam_id].K;
+            cout << list_ind <<"_"<<list_ind+1 << "_" << ind << endl;
+            K_mean = (d2/(d1+d2))*cali[left_cam_id].K + (d1/(d1+d2))*cali[right_cam_id].K;
+
+            cout << "K_mean = " << K_mean << endl;
+            cout << "cali[left_cam_id].K = " << cali[left_cam_id].K << endl;
+            cout << "cali[right_cam_id].K = " << cali[right_cam_id].K << endl;
 
             Matrix4d mp;
             mp.block<3,3>(0,0) = K_mean * now_R;
@@ -237,15 +244,20 @@ int main(int argc, char ** argv)
             mp(3,2) = 0;
             mp(3,3) = 1;
 
+            cout << "mp = " << endl;
+            cout << mp <<endl;
+            cout << "cali[right].mp= " <<endl;
+            cout << cali[right_cam_id].mP << endl;
+
             ImageFrame target_img;
             target_img.mP = mp;
             target_img.RT = rt;
             tool.projXYZtoUV(left_cam_id,0,1,target_img);
             tool.projXYZtoUV(right_cam_id,0,1,target_img);
 
-            tool.smoothDepth(target_img,3); // 虽然在平滑之后的深度没有了部分突变，但是在原图投影过来的位置，依然是存在黑点，因此融合的结果中依然有黑点存在，因此需要使用反向warp
+//            tool.smoothDepth(target_img,3); // 虽然在平滑之后的深度没有了部分突变，但是在原图投影过来的位置，依然是存在黑点，因此融合的结果中依然有黑点存在，因此需要使用反向warp
 
-            tool.rendering(target_img);
+            tool.rendering(target_img,d1,d2);
 
             stringstream ss;
             ss << "/Users/sheng/Desktop/img/";

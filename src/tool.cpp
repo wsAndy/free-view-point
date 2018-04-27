@@ -92,12 +92,13 @@ void Tool::projUVtoXYZ(int id ,int startInd, int endInd)
         Mat dep = cali[id].dep_vec[i];
         Mat rgb = cali[id].rgb_vec[i];
 
+        Mat front = cali[id].frontground[i];
+        Mat back = cali[id].background[i];
+
         int height = dep.rows;
         int width = dep.cols;
         pl_.height = height;
         pl_.width = width;
-
-
 
         Matrix4d mp = cali[id].mP;
 
@@ -105,6 +106,7 @@ void Tool::projUVtoXYZ(int id ,int startInd, int endInd)
         {
             for(int u = 0; u < width; ++u)
             {
+
                 double c0, c1, c2;
 
                 double z = getPixelActualDepth(dep.at<Vec3b>(v,u)[0]);
@@ -129,10 +131,26 @@ void Tool::projUVtoXYZ(int id ,int startInd, int endInd)
                 pp.x = x;
                 pp.y = y;
                 pp.z = z;
+                pp.address = mainground;
+
+                if(front.at<cv::Vec3b>(height - v - 1,u)[0] > 250 &&
+                   front.at<cv::Vec3b>(height - v - 1,u)[1] < 5 &&
+                   front.at<cv::Vec3b>(height - v - 1,u)[2] < 5)
+                {
+                    pp.address = frontground;
+                }
+
+                if(back.at<cv::Vec3b>(height - v - 1,u)[0] < 5 &&
+                 back.at<cv::Vec3b>(height - v - 1,u)[1] < 5 &&
+                 back.at<cv::Vec3b>(height - v - 1,u)[2] >250)
+                {
+                    pp.address = background;
+                }
 
                 pp.r = rgb.at<cv::Vec3b>(height -1- v, u)[2];
                 pp.g = rgb.at<cv::Vec3b>(height -1- v, u)[1];
                 pp.b = rgb.at<cv::Vec3b>(height -1- v, u)[0];
+
                 pl_.pl.push_back(pp);
 
             }
@@ -192,6 +210,9 @@ void Tool::projXYZtoUV(int cam_id, int startInd, int endInd, ImageFrame& target_
                     x = pl_.pl[i*width + j].x; // 这一些都是在世界坐标系中的值
                     y = pl_.pl[i*width + j].y;
                     z = pl_.pl[i*width + j].z;
+
+                    // 在这边加上，如果遇到前后景边缘，则将dep以及rgb变黑色不直接投影
+
 
                     u = P(0,0)*x + P(0,1)*y + P(0,2)*z + P(0,3);
                     v = P(1,0)*x + P(1,1)*y + P(1,2)*z + P(1,3);
@@ -628,7 +649,7 @@ void Tool::releaseImageFrame(ImageFrame& img)
 
 }
 
-void Tool::rendering(ImageFrame& img_frame)
+void Tool::rendering(ImageFrame& img_frame, double d1, double d2)
 {
     // use two image
 
@@ -668,7 +689,13 @@ void Tool::rendering(ImageFrame& img_frame)
     right_back = cali[img_frame.proj_src_id[1]].background[0];
 
 //    fusingRgb(left_rgb,left_dep, left_mp, left_T, right_rgb,right_dep, right_mp, right_T, vir_rgb, target_mp, target_T );
-    fusingRgb(left_rgb,left_dep, left_front, left_back, left_mp, left_T, right_rgb,right_dep, right_front, right_back, right_mp, right_T, vir_rgb, target_mp, target_T );
+    if(d1 > d2)// left图像距离大，则使用right为标准
+    {
+        fusingRgb(right_rgb,right_dep, right_front, right_back, right_mp, right_T,left_rgb,left_dep, left_front, left_back, left_mp, left_T,  vir_rgb, target_mp, target_T );
+    }else{
+
+        fusingRgb(left_rgb,left_dep, left_front, left_back, left_mp, left_T, right_rgb,right_dep, right_front, right_back, right_mp, right_T, vir_rgb, target_mp, target_T );
+    }
 
     img_frame.vir_img.push_back(vir_rgb);
 //    imwrite("/Users/sheng/Desktop/result.jpg",vir_rgb);
