@@ -104,6 +104,7 @@ enum main_front_back{ mainground = 1, frontground, background };
 
         // rendering to novel viewpoint.
         void rendering(ImageFrame& img_frame, double d1, double d2);
+        void renderingTest(ImageFrame& img_frame, double d1, double d2);
 
         // get frontground and background
         void getFrontBackGround(int camid, int startIndex = 0, int endIndex = 1 );
@@ -113,6 +114,10 @@ enum main_front_back{ mainground = 1, frontground, background };
 
         void warpuv(Matrix4d& src_mp, Matrix4d& dst_mp, double src_u, double src_v, double* dst_u, double* dst_v, Mat& dep);
 
+
+        void fusingRgb_forward(Mat& left_rgb, Mat& left_dep,
+                               Mat& right_rgb,Mat& right_dep,
+                               Mat& vir_rgb);
         //fusing two rgb image
         void fusingRgb(Mat& left_rgb, Mat& left_dep, Matrix4d& left_mp, Matrix<double,3,1>& left_T,
                        Mat& right_rgb, Mat& right_dep, Matrix4d& right_mp, Matrix<double,3,1>& right_T,
@@ -122,6 +127,23 @@ enum main_front_back{ mainground = 1, frontground, background };
         void fusingRgb(Mat& left_rgb, Mat& left_dep, Mat& left_front, Mat& left_back, Matrix4d& left_mp, Matrix<double,3,1>& left_T,
                        Mat& right_rgb, Mat& right_dep,Mat& right_front, Mat& right_back, Matrix4d& right_mp, Matrix<double,3,1>& right_T,
                        Mat& vir_rgb, Matrix4d& target_mp, Matrix<double,3,1>& target_T);
+
+        Matrix4d changeRT(Matrix4d& rt)
+        {
+            Vector3d t = rt.block<3,1>(0,3), t_;
+            Matrix3d r = rt.block<3,3>(0,0), r_;
+            r_ = r.transpose();
+            t_ = -1*r_*t;
+
+            Matrix4d res;
+            res.block<3,3>(0,0) = r_;
+            res.block<3,1>(0,3) = t_;
+            res(3,0) = 0;
+            res(3,1) = 0;
+            res(3,2) = 0;
+            res(3,3) = 1;
+            return res;
+        }
 
         // TODO:
         // !!!!!!   this function is not used , have BUGS   !!!!!!

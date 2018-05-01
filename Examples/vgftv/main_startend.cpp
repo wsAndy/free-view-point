@@ -6,7 +6,7 @@ using namespace cv;
 using namespace fvv_tool;
 using namespace Eigen;
 
-
+// 这个代码是直接拉0-7实现效果不好。
 void test(Tool& );
 
 // 在这个实验中，
@@ -89,12 +89,14 @@ int main(int argc, char ** argv)
 //    }
 //    K_mean = K_mean / 8;
 
+
     // 设定目标位姿
     int list[8] = {0,1,2,3,4,5,6,7};
-    for(int list_ind = 0; list_ind < 7; ++list_ind)
+    for(int list_ind = 0; list_ind < 1; ++list_ind)
     {
-        int left_cam_id = list[list_ind];
-        int right_cam_id = list[list_ind+1];
+
+        int left_cam_id = list_ind;
+        int right_cam_id = list_ind+7;
 
         Matrix4d tmp_left_rt, tmp_right_rt;
         Matrix3d tmp_left_r, tmp_right_r;
@@ -130,15 +132,16 @@ int main(int argc, char ** argv)
 //        cout << "left_cam_id = " << endl << cali[left_cam_id].pos << endl;
 //        cout << "right_cam_id = " << endl << cali[right_cam_id].pos << endl;
 
-        for(int ind = 1; ind <= 10; ++ind)
+        int ll_size = 80;
+        for(int ind = 1; ind <= ll_size; ++ind)
         {
 
             Matrix3d now_R;
             Vector3d now_T;
             cv::Matx33d now_R_mat;
-            Vector3d pos = left_pos+( right_pos - left_pos )*ind/(10);
+            Vector3d pos = left_pos+( right_pos - left_pos )*ind/(ll_size+1);
 
-            Vector3d om_in = om*ind/10.0;
+            Vector3d om_in = om*ind/(ll_size+1.0);
             cv::Vec3d om_in_mat;
 
             om_in_mat(0) = om_in(0); om_in_mat(1) = om_in(1); om_in_mat(2) = om_in(2);
@@ -176,65 +179,68 @@ int main(int argc, char ** argv)
             ou << now_R(2,0) << " " <<  now_R(2,1) << " "  << now_R(2,2) << endl;
             ou << now_T(0) << " " <<  now_T(1) << " "  << now_T(2) << endl;
 
-
             Matrix3d K_mean = MatrixXd::Zero(3,3);
 
 
-            double d1 =  tool.distance(cali[left_cam_id].pos, pos);
-            double d2 =  tool.distance(cali[right_cam_id].pos, pos);
+            // 下面这段是左右各一个
+            int tmp_d1_ind = 0, tmp_d2_ind = 0;
+            vector<double> d_positive, d_negative;
+            vector<int> d_positive_ind, d_negative_ind;
+            for(int kk = 0; kk < 8; ++kk)
+            {
+                double d = tool.distance(cali[kk].pos, pos);
+                // 注意方向，但从[0]位置判别不出
+                Vector4d zz1,zz2;
+                zz1(0) = 0; zz2(0) = 0;
+                zz1(1) = 0; zz2(1) = 0;
+                zz1(2) = 0; zz2(2) = 10;
+                zz1(3) = 1; zz2(3) = 1;
 
-//            double d3 = 0.0;
+                Vector4d cali_pos_zz1 = tool.changeRT(cali[kk].RT) * zz1;
+                Vector4d cali_pos_zz2 = tool.changeRT(cali[kk].RT) * zz2;
+                Vector4d pos_zz1 = tool.changeRT(rt) * zz1;
 
-//            double d3_1 = -1.0, d3_2 = -1.0;
-//            if( left_cam_id > 0 )
-//            {
-//                d3_1 = tool.distance(cali[left_cam_id-1].pos, pos);
-//            }
-//            if( right_cam_id < 7 )
-//            {
-//                d3_2 = tool.distance(cali[right_cam_id+1].pos, pos);
-//            }
+                double x0 = cali_pos_zz1(0);
+                double y0 = cali_pos_zz1(2);
+                double x1 = cali_pos_zz2(0);
+                double y1 = cali_pos_zz2(2);
+                double px = pos_zz1(0);
+                double py = pos_zz1(2);
 
-//            if( d3_1 > 0 && d3_1 < d3_2 )
-//            {
-//                d3 = d3_1;
-//            }
+                double tmp = ( (x1 - x0)*(py - y0) - (px - x0)*(y1 - y0) );
+                if( tmp > 0 )
+                {
+                    d_positive.push_back(d);
+                    d_positive_ind.push_back(kk);
+                }else{
+                    d_negative.push_back(d);
+                    d_negative_ind.push_back(kk);
+                }
+            }
 
-//            if( d3_2 > 0 && d3_2 < d3_1 )
-//            {
-//                d3 = d3_2;
-//            }
+            vector<double> d_positive_tmp, d_negative_tmp;
+            d_positive_tmp = d_positive;
+            d_negative_tmp = d_negative;
 
-//            if(abs(d3 - d3_1)<1e-4 )
-//            {
-//                K_mean = ( (d2+d3)/(d1+d2+d3))*cali[left_cam_id].K + ((d1+d3)/(d1+d2+d3))*cali[right_cam_id].K + ((d1+d2)/(d1+d2+d3))*cali[left_cam_id-1].K;
-//                K_mean /= 2;
-////                cout << "cali[left_cam_id].K = " << cali[left_cam_id].K<<endl;
-////                cout << "cali[right_cam_id].K = " << cali[right_cam_id].K << endl;
-////                cout << "cali[left_cam_id-1].K = " << cali[left_cam_id-1].K << endl;
-//            }else{
-//                K_mean =  ( (d2+d3)/(d1+d2+d3))*cali[left_cam_id].K + ((d1+d3)/(d1+d2+d3))*cali[right_cam_id].K + ((d1+d2)/(d1+d2+d3))*cali[right_cam_id+1].K;
-//                K_mean /= 2;
-////                cout << "cali[left_cam_id].K = " << cali[left_cam_id].K<<endl;
-////                cout << "cali[right_cam_id].K = " << cali[right_cam_id].K << endl;
-////                cout << "cali[right_cam_id+1].K = " << cali[right_cam_id+1].K << endl;
-//            }
+            sort(d_positive_tmp.begin(), d_positive_tmp.end());
+            sort(d_negative_tmp.begin(), d_negative_tmp.end());
 
-//            if( right_cam_id == 7 )
-//            {
-//                K_mean = (d2/(d1+d2))*cali[left_cam_id].K + (d1/(d1+d2))*cali[right_cam_id].K;
-//            }
+            tmp_d1_ind = d_positive_ind[find(d_positive.begin(), d_positive.end(), d_positive_tmp[0] ) - d_positive.begin()];
+            tmp_d2_ind = d_negative_ind[find(d_negative.begin(), d_negative.end(), d_negative_tmp[0] ) - d_negative.begin()];
 
+            if( d_positive_tmp[0] > d_negative_tmp[0] )
+            {
+                tmp_d2_ind = tmp_d2_ind + tmp_d1_ind;
+                tmp_d1_ind = tmp_d2_ind - tmp_d1_ind;
+                tmp_d2_ind = tmp_d2_ind - tmp_d1_ind;
+            }
 
-//            cout << "K_mean = " << K_mean << endl;
+            // tmp_d1_ind是最小的 tmp_d2_ind是第二小的编号
 
+            double d1 =  tool.distance(cali[tmp_d1_ind].pos, pos);// d1一定最小
+            double d2 =  tool.distance(cali[tmp_d2_ind].pos, pos);// d2一定第二小
 
-            cout << list_ind <<"_"<<list_ind+1 << "_" << ind << endl;
-            K_mean = (d2/(d1+d2))*cali[left_cam_id].K + (d1/(d1+d2))*cali[right_cam_id].K;
-
-            cout << "K_mean = " << K_mean << endl;
-            cout << "cali[left_cam_id].K = " << cali[left_cam_id].K << endl;
-            cout << "cali[right_cam_id].K = " << cali[right_cam_id].K << endl;
+            K_mean = (d2/(d1+d2))*cali[tmp_d1_ind].K + (d1/(d1+d2))*cali[tmp_d2_ind].K;
 
             Matrix4d mp;
             mp.block<3,3>(0,0) = K_mean * now_R;
@@ -244,44 +250,28 @@ int main(int argc, char ** argv)
             mp(3,2) = 0;
             mp(3,3) = 1;
 
-            cout << "mp = " << endl;
-            cout << mp <<endl;
-            cout << "cali[right].mp= " <<endl;
-            cout << cali[right_cam_id].mP << endl;
 
             ImageFrame target_img;
             target_img.mP = mp;
             target_img.RT = rt;
-            tool.projXYZtoUV(left_cam_id,0,1,target_img);
-            tool.projXYZtoUV(right_cam_id,0,1,target_img);
+            tool.projXYZtoUV(tmp_d1_ind,0,1,target_img);
+            tool.projXYZtoUV(tmp_d2_ind,0,1,target_img);
 
+//            if(ind == 5)
+//            {
+//                imwrite("/Users/sheng/Desktop/img/5_0.jpg",target_img.rgb_vec[0]);
+//                imwrite("/Users/sheng/Desktop/img/5_1.jpg",target_img.rgb_vec[1]);
+//            }
 
-//            imshow("left_cam",target_img.rgb_vec[0]);
-//            imshow("right_cam",target_img.rgb_vec[1]);
-
-            if(ind == 4)
-            {
-            imwrite("/Users/sheng/Desktop/left4.jpg",target_img.rgb_vec[0]);
-            imwrite("/Users/sheng/Desktop/right4.jpg",target_img.rgb_vec[1]);
-            }
-
-
-            if(ind == 5)
-            {
-            imwrite("/Users/sheng/Desktop/left5.jpg",target_img.rgb_vec[0]);
-            imwrite("/Users/sheng/Desktop/right5.jpg",target_img.rgb_vec[1]);
-            }
-
-
-            if(ind == 6)
-            {
-            imwrite("/Users/sheng/Desktop/left6.jpg",target_img.rgb_vec[0]);
-            imwrite("/Users/sheng/Desktop/right6.jpg",target_img.rgb_vec[1]);
-            }
+//            if(ind == 6)
+//            {
+//                imwrite("/Users/sheng/Desktop/img/6_1.jpg",target_img.rgb_vec[0]);
+//                imwrite("/Users/sheng/Desktop/img/6_0.jpg",target_img.rgb_vec[1]);
+//            }
 
 //            tool.smoothDepth(target_img,3); // 虽然在平滑之后的深度没有了部分突变，但是在原图投影过来的位置，依然是存在黑点，因此融合的结果中依然有黑点存在，因此需要使用反向warp
 
-            tool.rendering(target_img,d1,d2);
+            tool.renderingTest(target_img,d1,d2);
 
             stringstream ss;
             ss << "/Users/sheng/Desktop/img/";

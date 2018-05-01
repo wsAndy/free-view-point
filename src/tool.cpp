@@ -653,6 +653,7 @@ void Tool::rendering(ImageFrame& img_frame, double d1, double d2)
 {
     // use two image
 
+    // 这边left一定是比right距离要小的一个，而且 proj_src_id的顺序在之前也定下来了
     Matrix<double,3,1> left_T;
     Matrix<double,3,1> right_T;
     Matrix<double,3,1> target_T;
@@ -688,16 +689,53 @@ void Tool::rendering(ImageFrame& img_frame, double d1, double d2)
     right_front = cali[img_frame.proj_src_id[1]].frontground[0];
     right_back = cali[img_frame.proj_src_id[1]].background[0];
 
-//    fusingRgb(left_rgb,left_dep, left_mp, left_T, right_rgb,right_dep, right_mp, right_T, vir_rgb, target_mp, target_T );
-    if(d1 > d2)// left图像距离大，则使用right为标准
-    {
-        fusingRgb(right_rgb,right_dep, right_front, right_back, right_mp, right_T,left_rgb,left_dep, left_front, left_back, left_mp, left_T,  vir_rgb, target_mp, target_T );
-    }else{
+//    if(d1 > d2)// left图像距离大，则使用right为标准
+//    {
+//        fusingRgb(right_rgb,right_dep, right_front, right_back, right_mp, right_T,left_rgb,left_dep, left_front, left_back, left_mp, left_T,  vir_rgb, target_mp, target_T );
+//    }else{
 
         fusingRgb(left_rgb,left_dep, left_front, left_back, left_mp, left_T, right_rgb,right_dep, right_front, right_back, right_mp, right_T, vir_rgb, target_mp, target_T );
-    }
+//    }
 
     img_frame.vir_img.push_back(vir_rgb);
+
+
+//    imwrite("/Users/sheng/Desktop/result.jpg",vir_rgb);
+
+    cout << "fusing rgb over." <<endl;
+
+}
+
+
+
+void Tool::renderingTest(ImageFrame& img_frame, double d1, double d2)
+{
+    // use two image
+
+    Mat left_rgb = img_frame.rgb_vec[0];
+    Mat left_dep = img_frame.dep_vec[0];
+
+    Mat right_rgb = img_frame.rgb_vec[1];
+    Mat right_dep = img_frame.dep_vec[1];
+
+    Mat vir_rgb = Mat::zeros(left_rgb.rows, left_rgb.cols, CV_8UC3);
+
+    // 下面颜色校正存在问题
+//    colorConsistency(left_rgb, right_rgb);
+
+    Mat left_front, left_back, right_front, right_back;
+
+    left_front = cali[ img_frame.proj_src_id[0] ].frontground[0];
+    left_back = cali[img_frame.proj_src_id[0]].background[0];
+
+    right_front = cali[img_frame.proj_src_id[1]].frontground[0];
+    right_back = cali[img_frame.proj_src_id[1]].background[0];
+
+    fusingRgb_forward(left_rgb,left_dep,  right_rgb, right_dep, vir_rgb );
+
+    img_frame.vir_img.push_back(vir_rgb);
+
+
 //    imwrite("/Users/sheng/Desktop/result.jpg",vir_rgb);
 
     cout << "fusing rgb over." <<endl;
@@ -893,6 +931,39 @@ void Tool::fusingRgb(Mat &left_rgb, Mat &left_dep, Matrix4d& left_mp, Matrix<dou
 
 }
 */
+
+
+void Tool::fusingRgb_forward(Mat& left_rgb, Mat& left_dep,
+                             Mat& right_rgb,Mat& right_dep,
+                             Mat& vir_rgb)
+{
+//    Mat target_dep = Mat::zeros(left_rgb.rows, left_rgb.cols, CV_8UC3);
+//    Mat target_back = Mat::zeros(left_rgb.rows, left_rgb.cols, CV_8UC3);
+
+    for(int i = 0; i < left_rgb.rows; ++i)
+    {
+        for(int j = 0; j < left_rgb.cols; ++j)
+        {
+            if( left_dep.at<Vec3b>(i,j)[0] != 0 &&  left_dep.at<Vec3b>(i,j)[1] != 0 &&  left_dep.at<Vec3b>(i,j)[2] != 0)
+            {
+                for(int ch = 0; ch < 3; ++ch)
+                {
+                    vir_rgb.at<Vec3b>(i,j)[ch] = left_rgb.at<Vec3b>(i,j)[ch];
+                }
+            }else if(right_dep.at<Vec3b>(i,j)[0] != 0 &&  right_dep.at<Vec3b>(i,j)[1] != 0 &&  right_dep.at<Vec3b>(i,j)[2] != 0)
+            {
+                for(int ch = 0; ch < 3; ++ch)
+                {
+                    vir_rgb.at<Vec3b>(i,j)[ch] = right_rgb.at<Vec3b>(i,j)[ch];
+                }
+            }
+        }
+    }
+
+// 本来下面有边缘的深度修正啥啥啥的先不做
+
+
+}
 
 
 void Tool::fusingRgb(Mat& left_rgb, Mat& left_dep, Mat& left_front, Mat& left_back, Matrix4d& left_mp, Matrix<double,3,1>& left_T,

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(free-view-point)
 
-find_package(OpenCV REQUIRED)
+find_package(OpenCV 3.3 REQUIRED)
 find_Package(Eigen3 REQUIRED)
 #find_package(PCL REQUIRED)
 
@@ -66,5 +66,10 @@ target_link_libraries(tt ${PROJECT_NAME})
 add_executable( main_backfront
 Examples/vgftv/main_backfront.cpp)
 target_link_libraries(main_backfront ${PROJECT_NAME})
+
+add_executable( main_startend
+Examples/vgftv/main_startend.cpp)
+target_link_libraries(main_startend ${PROJECT_NAME})
+
 
 
