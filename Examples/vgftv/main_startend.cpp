@@ -271,7 +271,7 @@ int main(int argc, char ** argv)
 
 //            tool.smoothDepth(target_img,3); // 虽然在平滑之后的深度没有了部分突变，但是在原图投影过来的位置，依然是存在黑点，因此融合的结果中依然有黑点存在，因此需要使用反向warp
 
-            tool.renderingTest(target_img,d1,d2);
+            tool.rendering_forward(target_img,d1,d2);
 
             stringstream ss;
             ss << "/Users/sheng/Desktop/img/";

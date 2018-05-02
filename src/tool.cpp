@@ -92,13 +92,14 @@ void Tool::projUVtoXYZ(int id ,int startInd, int endInd)
         Mat dep = cali[id].dep_vec[i];
         Mat rgb = cali[id].rgb_vec[i];
 
-        Mat front = cali[id].frontground[i];
-        Mat back = cali[id].background[i];
+//        Mat front = cali[id].frontground[i];
+//        Mat back = cali[id].background[i];
 
         int height = dep.rows;
         int width = dep.cols;
         pl_.height = height;
         pl_.width = width;
+
 
         Matrix4d mp = cali[id].mP;
 
@@ -106,6 +107,7 @@ void Tool::projUVtoXYZ(int id ,int startInd, int endInd)
         {
             for(int u = 0; u < width; ++u)
             {
+
 
                 double c0, c1, c2;
 
@@ -131,21 +133,21 @@ void Tool::projUVtoXYZ(int id ,int startInd, int endInd)
                 pp.x = x;
                 pp.y = y;
                 pp.z = z;
-                pp.address = mainground;
+//                pp.address = mainground;
 
-                if(front.at<cv::Vec3b>(height - v - 1,u)[0] > 250 &&
-                   front.at<cv::Vec3b>(height - v - 1,u)[1] < 5 &&
-                   front.at<cv::Vec3b>(height - v - 1,u)[2] < 5)
-                {
-                    pp.address = frontground;
-                }
+//                if(front.at<cv::Vec3b>(height - v - 1,u)[0] > 250 &&
+//                   front.at<cv::Vec3b>(height - v - 1,u)[1] < 5 &&
+//                   front.at<cv::Vec3b>(height - v - 1,u)[2] < 5)
+//                {
+//                    pp.address = frontground;
+//                }
 
-                if(back.at<cv::Vec3b>(height - v - 1,u)[0] < 5 &&
-                 back.at<cv::Vec3b>(height - v - 1,u)[1] < 5 &&
-                 back.at<cv::Vec3b>(height - v - 1,u)[2] >250)
-                {
-                    pp.address = background;
-                }
+//                if(back.at<cv::Vec3b>(height - v - 1,u)[0] < 5 &&
+//                 back.at<cv::Vec3b>(height - v - 1,u)[1] < 5 &&
+//                 back.at<cv::Vec3b>(height - v - 1,u)[2] >250)
+//                {
+//                    pp.address = background;
+//                }
 
                 pp.r = rgb.at<cv::Vec3b>(height -1- v, u)[2];
                 pp.g = rgb.at<cv::Vec3b>(height -1- v, u)[1];
@@ -182,7 +184,7 @@ double Tool::projXYZtoUV(Eigen::Matrix4d &P, double x, double y, double z, doubl
 
 // 这边这个投影并不是最终的，要注意这个问题其实挺多的，需要讲究
 // 这个target_img只对应一个源图像的投影的结果，对于多个源投影的结果，要有多个target_img
-void Tool::projXYZtoUV(int cam_id, int startInd, int endInd, ImageFrame& target_img)
+void Tool::projXYZtoUV(int cam_id, int startInd, int endInd, ImageFrame& target_img, bool del_back)
 {
     ImageFrame src_img = cali[cam_id];
     Eigen::Matrix4d P = target_img.mP;
@@ -201,7 +203,6 @@ void Tool::projXYZtoUV(int cam_id, int startInd, int endInd, ImageFrame& target_
             Mat rgb_tar = Mat::zeros(height, width, CV_8UC3);
             Mat dep_tar = Mat::zeros(height, width, CV_8UC3);
 
-
             for(int i = 0; i < height; ++i)
             {
                 for(int j = 0; j < width; ++j)
@@ -212,7 +213,12 @@ void Tool::projXYZtoUV(int cam_id, int startInd, int endInd, ImageFrame& target_
                     z = pl_.pl[i*width + j].z;
 
                     // 在这边加上，如果遇到前后景边缘，则将dep以及rgb变黑色不直接投影
-
+                    // 所有的前景部分都不投影
+//                    main_front_back address =  pl_.pl[i*width + j].address;
+//                    if( address == background && del_back == true)
+//                    {
+//                        continue;
+//                    }
 
                     u = P(0,0)*x + P(0,1)*y + P(0,2)*z + P(0,3);
                     v = P(1,0)*x + P(1,1)*y + P(1,2)*z + P(1,3);
@@ -630,6 +636,274 @@ void Tool::findNearestCamId(Matrix4d& rt, int num, int& m1_, int& m2_)
 
 }
 
+
+// 将投影在目标位置的那个图像，提取边缘，做处理
+// 下面将待处理的那个图像称为left_img,left_dep，实际是根据d的距离来
+void Tool::getProjBackground(ImageFrame &img_frame, double d1, double d2)
+{
+
+    //
+    Mat left_img;
+    Mat left_dep;
+    if( d1 > d2 )
+    {
+         left_img = img_frame.rgb_vec[1];
+         left_dep = img_frame.dep_vec[1];
+    }else{
+        left_img = img_frame.rgb_vec[0];
+        left_dep = img_frame.dep_vec[0];
+    }
+
+    Mat left_dep_med;
+    medianBlur(left_dep,left_dep_med,3);
+
+    Mat left_dep_g, edge1;
+    cvtColor(left_dep_med,left_dep_g,CV_BGR2GRAY);
+    Canny(left_dep_g,edge1,70,255);
+
+    Mat back = Mat::zeros(edge1.rows, edge1.cols, CV_8UC3);
+    Mat back_jud = Mat::zeros(edge1.rows, edge1.cols, CV_8UC3);
+
+    // 从canny的结果中，筛选
+    for(int i = 0; i < edge1.rows; ++i)
+    {
+        for(int j = 1; j < edge1.cols-1; ++j)
+        {
+            // 主要是水平方向
+            if( edge1.at<uchar>(i,j) > 250 )
+            {
+                // 在边缘位置，搜索原来dep位置
+                if( left_dep.at<Vec3b>(i,j)[0] == 0 && left_dep.at<Vec3b>(i,j)[1] == 0 && left_dep.at<Vec3b>(i,j)[2] == 0)
+                {
+                    // 自己空的
+                    if( (left_dep.at<Vec3b>(i,j-1)[0] == 0 && left_dep.at<Vec3b>(i,j-1)[1] == 0 && left_dep.at<Vec3b>(i,j-1)[2] == 0)
+                         && (left_dep.at<Vec3b>(i,j+1)[0] == 0 && left_dep.at<Vec3b>(i,j+1)[1] == 0 && left_dep.at<Vec3b>(i,j+1)[2] == 0)
+                      )
+                    {
+                        // 左右都空，直接删除,这边就是back不赋值
+                        continue;
+                    }
+
+                    if((left_dep.at<Vec3b>(i,j-1)[0] != 0 || left_dep.at<Vec3b>(i,j-1)[1] != 0 || left_dep.at<Vec3b>(i,j-1)[2] != 0)
+                          && (left_dep.at<Vec3b>(i,j+1)[0] != 0 || left_dep.at<Vec3b>(i,j+1)[1] != 0 || left_dep.at<Vec3b>(i,j+1)[2] != 0)
+                       )
+                    {
+                        // 左右都非空，直接删除
+                        continue;
+                    }
+
+                    if( (left_dep.at<Vec3b>(i,j-1)[0] != 0 || left_dep.at<Vec3b>(i,j-1)[1] != 0 || left_dep.at<Vec3b>(i,j-1)[2] != 0)
+                          && (left_dep.at<Vec3b>(i,j+1)[0] == 0 && left_dep.at<Vec3b>(i,j+1)[1] == 0 && left_dep.at<Vec3b>(i,j+1)[2] == 0)
+                       )
+                    {
+                        // 左边非空，右边空
+                        // 一直找到右边非空的值，然后与左边进行判断
+                        int jj = j+1;
+                        while(jj < edge1.cols)
+                        {
+                            if(left_dep.at<Vec3b>(i,jj)[0] != 0 || left_dep.at<Vec3b>(i,jj)[1] != 0 || left_dep.at<Vec3b>(i,jj)[2] != 0)
+                            {
+                                break;
+                            }else{
+                                jj++;
+                            }
+                        }
+
+                        if( getPixelActualDepth(left_dep.at<Vec3b>(i,jj)[0]) < getPixelActualDepth(left_dep.at<Vec3b>(i,j-1)[0]) )
+                        {
+                            // 右边深度小，当前的j靠近的是背景
+                            back.at<Vec3b>(i,j)[0] = 255;
+                            back.at<Vec3b>(i,j)[1] = 255;
+                            back.at<Vec3b>(i,j)[2] = 255;
+                            back_jud.at<Vec3b>(i,j)[2] = 255; // 左边非空，左边是背景,R
+                        }
+                    }
+
+                    if( (left_dep.at<Vec3b>(i,j+1)[0] != 0 || left_dep.at<Vec3b>(i,j+1)[1] != 0 || left_dep.at<Vec3b>(i,j+1)[2] != 0)
+                          && (left_dep.at<Vec3b>(i,j-1)[0] == 0 && left_dep.at<Vec3b>(i,j-1)[1] == 0 && left_dep.at<Vec3b>(i,j-1)[2] == 0)
+                       )
+                    {
+                        // 右边非空，左边空
+                        // 一直找到左边非空的值，然后与右边进行判断
+                        int jj = j-1;
+                        while(jj > 0)
+                        {
+                            if(left_dep.at<Vec3b>(i,jj)[0] != 0 || left_dep.at<Vec3b>(i,jj)[1] != 0 || left_dep.at<Vec3b>(i,jj)[2] != 0)
+                            {
+                                break;
+                            }else{
+                                jj--;
+                            }
+                        }
+
+                        if( getPixelActualDepth(left_dep.at<Vec3b>(i,jj)[0]) < getPixelActualDepth(left_dep.at<Vec3b>(i,j+1)[0]) )
+                        {
+                            // 左边深度小，当前的j靠近的是背景
+                            back.at<Vec3b>(i,j)[0] = 255;
+                            back.at<Vec3b>(i,j)[1] = 255;
+                            back.at<Vec3b>(i,j)[2] = 255;
+                            back_jud.at<Vec3b>(i,j)[0] = 255; // 右边非空，右边是背景,B
+                        }
+                    }
+
+
+
+                }else{
+                    // 自己非空
+                    if( (left_dep.at<Vec3b>(i,j-1)[0] != 0 || left_dep.at<Vec3b>(i,j-1)[1] != 0 || left_dep.at<Vec3b>(i,j-1)[2] != 0)
+                         && (left_dep.at<Vec3b>(i,j+1)[0] != 0 || left_dep.at<Vec3b>(i,j+1)[1] != 0 || left_dep.at<Vec3b>(i,j+1)[2] != 0)
+                      )
+                    {
+                        // 左右都非空
+                        continue;
+                    }
+
+                    if( (left_dep.at<Vec3b>(i,j-1)[0] == 0 && left_dep.at<Vec3b>(i,j-1)[1] == 0 && left_dep.at<Vec3b>(i,j-1)[2] == 0)
+                         && (left_dep.at<Vec3b>(i,j+1)[0] == 0 && left_dep.at<Vec3b>(i,j+1)[1] == 0 && left_dep.at<Vec3b>(i,j+1)[2] == 0)
+                      )
+                    {
+                        // 左右都空，直接删除,这边就是back不赋值
+                        continue;
+                    }
+
+                    if( (left_dep.at<Vec3b>(i,j-1)[0] != 0 || left_dep.at<Vec3b>(i,j-1)[1] != 0 || left_dep.at<Vec3b>(i,j-1)[2] != 0)
+                          && (left_dep.at<Vec3b>(i,j+1)[0] == 0 && left_dep.at<Vec3b>(i,j+1)[1] == 0 && left_dep.at<Vec3b>(i,j+1)[2] == 0)
+                       )
+                    {
+                        // 左边非空，右边空
+                        // 一直找到右边非空的值，然后与当前进行判断
+                        int jj = j+1;
+                        while(jj < edge1.cols)
+                        {
+                            if(left_dep.at<Vec3b>(i,jj)[0] != 0 || left_dep.at<Vec3b>(i,jj)[1] != 0 || left_dep.at<Vec3b>(i,jj)[2] != 0)
+                            {
+                                break;
+                            }else{
+                                jj++;
+                            }
+                        }
+
+                        if( getPixelActualDepth(left_dep.at<Vec3b>(i,jj)[0]) < getPixelActualDepth(left_dep.at<Vec3b>(i,j)[0]) )
+                        {
+                            // 右边深度小，当前的j靠近的是背景
+                            back.at<Vec3b>(i,j)[0] = 255;
+                            back.at<Vec3b>(i,j)[1] = 255;
+                            back.at<Vec3b>(i,j)[2] = 255;
+                            back_jud.at<Vec3b>(i,j)[2] = 255; // 左边非空，左边是背景,R
+                        }
+
+                    }
+                    if( (left_dep.at<Vec3b>(i,j+1)[0] != 0 || left_dep.at<Vec3b>(i,j+1)[1] != 0 || left_dep.at<Vec3b>(i,j+1)[2] != 0)
+                          && (left_dep.at<Vec3b>(i,j-1)[0] == 0 && left_dep.at<Vec3b>(i,j-1)[1] == 0 && left_dep.at<Vec3b>(i,j-1)[2] == 0)
+                       )
+                    {
+                        // 右边非空，左边空
+                        // 一直找到左边非空的值，然后与当前进行判断
+                        int jj = j-1;
+                        while(jj > 0)
+                        {
+                            if(left_dep.at<Vec3b>(i,jj)[0] != 0 || left_dep.at<Vec3b>(i,jj)[1] != 0 || left_dep.at<Vec3b>(i,jj)[2] != 0)
+                            {
+                                break;
+                            }else{
+                                jj--;
+                            }
+                        }
+
+                        if( getPixelActualDepth(left_dep.at<Vec3b>(i,jj)[0]) < getPixelActualDepth(left_dep.at<Vec3b>(i,j)[0]) )
+                        {
+                            // 左边深度小，当前的j靠近的是背景
+                            back.at<Vec3b>(i,j)[0] = 255;
+                            back.at<Vec3b>(i,j)[1] = 255;
+                            back.at<Vec3b>(i,j)[2] = 255;
+                            back_jud.at<Vec3b>(i,j)[0] = 255; // 右边非空，右边是背景,B
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+
+//    imwrite("/Users/sheng/Desktop/left_img.jpg",left_img);
+//    imwrite("/Users/sheng/Desktop/edge.png",edge1);
+//    imwrite("/Users/sheng/Desktop/back.png",back);
+
+//    imwrite("/Users/sheng/Desktop/back_jud.jpg",back_jud);
+
+//    imshow("edge",edge1);
+//    imshow("back",back);
+
+//    waitKey(0);
+    // 得到的back就是背景的边缘部分，这部分需要做一些滤波或是其他的操作
+
+    // 根据back以及back_jud，把当前投影的结果中的背景延伸块的至少k_em个的像素的区域删除
+//    Mat result_edge_mask = Mat::zeros(edge1.rows, edge1.cols, CV_8UC3);
+
+    int k_em = 5;
+    for(int i = 0; i < back.rows; ++i)
+    {
+        for(int j = k_em; j < back.cols-k_em; ++j)
+        {
+//            cout << "i = " << i << " , j = " << j << endl;
+            if( back.at<Vec3b>(i,j)[0] > 250 && back.at<Vec3b>(i,j)[1] > 250 && back.at<Vec3b>(i,j)[2] > 250  )
+            {
+                if( back_jud.at<Vec3b>(i,j)[0] > 250)
+                {
+                    // 右向延伸
+                    for(int pi = 0; pi <= k_em; ++pi)//B
+                    {
+                        left_img.at<Vec3b>(i,j+pi)[0] = 0;
+                        left_img.at<Vec3b>(i,j+pi)[1] = 0;
+                        left_img.at<Vec3b>(i,j+pi)[2] = 0;
+
+                        left_dep.at<Vec3b>(i,j+pi)[0] = 0;
+                        left_dep.at<Vec3b>(i,j+pi)[1] = 0;
+                        left_dep.at<Vec3b>(i,j+pi)[2] = 0;
+//                        result_edge_mask.at<Vec3b>(i,j+pi)[0] = 255;
+                    }
+
+
+                }
+
+                if(back_jud.at<Vec3b>(i,j)[2] > 250) //R
+                {
+                    // 左向延伸
+                    for(int pi = 0; pi <= k_em; ++pi)
+                    {
+                        left_img.at<Vec3b>(i,j-pi)[0] = 0;
+                        left_img.at<Vec3b>(i,j-pi)[1] = 0;
+                        left_img.at<Vec3b>(i,j-pi)[2] = 0;
+
+                        left_dep.at<Vec3b>(i,j-pi)[0] = 0;
+                        left_dep.at<Vec3b>(i,j-pi)[1] = 0;
+                        left_dep.at<Vec3b>(i,j-pi)[2] = 0;
+//                        result_edge_mask.at<Vec3b>(i,j-pi)[0] = 255;
+                    }
+                }
+            }
+        }
+
+    }
+
+    if( d1 > d2 )
+    {
+        img_frame.rgb_vec[1] = left_img;
+        img_frame.dep_vec[1] = left_dep;
+
+    }else{
+        img_frame.rgb_vec[0] = left_img;
+        img_frame.dep_vec[0] = left_dep;
+    }
+
+//    img_frame.result_edge_mask.push_back(result_edge_mask);
+
+//    imwrite("/Users/sheng/Desktop/left_img2.jpg",left_img);
+
+//    waitKey(0);
+
+}
+
 void Tool::releaseImageFrame(ImageFrame& img)
 {
 
@@ -646,10 +920,12 @@ void Tool::releaseImageFrame(ImageFrame& img)
     img.vir_img.clear();
     img.frontground.clear();
     img.background.clear();
+//    img.result_edge_mask.clear();
 
 }
 
-void Tool::rendering(ImageFrame& img_frame, double d1, double d2)
+// 这个下面使用了反向投影，发现效果不好！
+void Tool::rendering_backward(ImageFrame& img_frame, double d1, double d2)
 {
     // use two image
 
@@ -689,13 +965,13 @@ void Tool::rendering(ImageFrame& img_frame, double d1, double d2)
     right_front = cali[img_frame.proj_src_id[1]].frontground[0];
     right_back = cali[img_frame.proj_src_id[1]].background[0];
 
-//    if(d1 > d2)// left图像距离大，则使用right为标准
-//    {
-//        fusingRgb(right_rgb,right_dep, right_front, right_back, right_mp, right_T,left_rgb,left_dep, left_front, left_back, left_mp, left_T,  vir_rgb, target_mp, target_T );
-//    }else{
+    if(d1 > d2)// left图像距离大，则使用right为标准
+    {
+        fusingRgb(right_rgb,right_dep, right_front, right_back, right_mp, right_T,left_rgb,left_dep, left_front, left_back, left_mp, left_T,  vir_rgb, target_mp, target_T );
+    }else{
 
         fusingRgb(left_rgb,left_dep, left_front, left_back, left_mp, left_T, right_rgb,right_dep, right_front, right_back, right_mp, right_T, vir_rgb, target_mp, target_T );
-//    }
+    }
 
     img_frame.vir_img.push_back(vir_rgb);
 
@@ -708,7 +984,8 @@ void Tool::rendering(ImageFrame& img_frame, double d1, double d2)
 
 
 
-void Tool::renderingTest(ImageFrame& img_frame, double d1, double d2)
+// 下面是正向投影的结果，正向投影里面先后顺序其实不怎么重要，因为两个都是重合的...
+void Tool::rendering_forward(ImageFrame& img_frame, double d1, double d2)
 {
     // use two image
 
@@ -723,15 +1000,25 @@ void Tool::renderingTest(ImageFrame& img_frame, double d1, double d2)
     // 下面颜色校正存在问题
 //    colorConsistency(left_rgb, right_rgb);
 
-    Mat left_front, left_back, right_front, right_back;
+//    Mat left_front, left_back, right_front, right_back;
 
-    left_front = cali[ img_frame.proj_src_id[0] ].frontground[0];
-    left_back = cali[img_frame.proj_src_id[0]].background[0];
+//    left_front = cali[ img_frame.proj_src_id[0] ].frontground[0];
+//    left_back = cali[img_frame.proj_src_id[0]].background[0];
 
-    right_front = cali[img_frame.proj_src_id[1]].frontground[0];
-    right_back = cali[img_frame.proj_src_id[1]].background[0];
+//    right_front = cali[img_frame.proj_src_id[1]].frontground[0];
+//    right_back = cali[img_frame.proj_src_id[1]].background[0];
 
-    fusingRgb_forward(left_rgb,left_dep,  right_rgb, right_dep, vir_rgb );
+    if( d1 > d2 )
+    {
+        fusingRgb_forward(right_rgb,right_dep,  left_rgb, left_dep, vir_rgb );
+    }else{
+
+        fusingRgb_forward(left_rgb,left_dep,  right_rgb, right_dep, vir_rgb );
+    }
+
+
+    // 在 result_edge_mask中，做一次中值
+
 
     img_frame.vir_img.push_back(vir_rgb);
 
@@ -743,9 +1030,109 @@ void Tool::renderingTest(ImageFrame& img_frame, double d1, double d2)
 }
 
 
+void Tool::repair(ImageFrame &img_frame)
+{
+    Mat vir_img = img_frame.vir_img[0];
+
+    Mat empty_img = Mat::zeros(vir_img.rows, vir_img.cols, CV_8UC3);
+
+    for(int i = 0; i < vir_img.rows; ++i)
+    {
+        for(int j = 0; j < vir_img.cols; ++j)
+        {
+            if( vir_img.at<Vec3b>(i,j)[0] == 0 && vir_img.at<Vec3b>(i,j)[1] == 0 && vir_img.at<Vec3b>(i,j)[2] == 0 )
+            {
+                empty_img.at<Vec3b>(i,j)[0] = 255;
+                empty_img.at<Vec3b>(i,j)[1] = 255;
+                empty_img.at<Vec3b>(i,j)[2] = 255;
+            }
+        }
+    }
+
+
+    imshow("vir_img_before",vir_img);
+    imwrite("/Users/sheng/Desktop/vir_img_before.jpg",vir_img);
+    imwrite("/Users/sheng/Desktop/empty_before.jpg",empty_img);
+
+    int k_size = 1;
+
+    for(int i = k_size; i < empty_img.rows - k_size; ++i)
+    {
+        for(int j = k_size; j < empty_img.cols - k_size; ++j)
+        {
+            if( empty_img.at<Vec3b>(i,j)[0] > 250 )
+            {
+                // 开始做当前中心的中值滤波
+                for(int ch = 0; ch < 3; ++ch)
+                {
+                    vector<uchar> value;
+
+                    for(int ki = -1*k_size; ki <= k_size; ++ki)
+                    {
+                        for(int kj = -1 * k_size; kj <= k_size; ++kj)
+                        {
+                            if( ki == 0 && kj == 0 )
+                            {
+                                continue;
+                            }
+                            if( empty_img.at<Vec3b>(ki,kj)[0] > 250  )
+                            {
+                                continue;
+                            }
+                            value.push_back(vir_img.at<Vec3b>(ki,kj)[ch]);
+                        }
+                    }
+
+                    // 直接输出的值是ascii码
+                    if( value.size() < ( (2*k_size+1)*(2*k_size+1)-1 )/2  )
+                    {
+                        // 数目没有超过周围一半，则跳过
+                        continue;
+                    }
+
+                    // 得到value为周围 (2*k_size+1)^2-1 个像素的值，且没有空缺的位置的中值
+                    sort( value.begin(), value.end() );
+                    if( value.size() % 2 == 0 )
+                    {
+                        vir_img.at<Vec3b>(i,j)[ch] = round((value[value.size()/2]+value[value.size()/2-1])/2);
+                    }else{
+                        vir_img.at<Vec3b>(i,j)[ch] = value[ value.size()/2 ];
+                    }
+
+                }
+
+            }
+        }
+    }
+    从结果上看，根本就没有执行中值的操作，前后没变！！！！！！
+
+
+
+    Mat mm = Mat::zeros(vir_img.rows, vir_img.cols, CV_8UC3);
+    for(int i = 0; i < vir_img.rows; ++i)
+    {
+        for(int j = 0; j < vir_img.cols; ++j)
+        {
+            if( vir_img.at<Vec3b>(i,j)[0] == 0 && vir_img.at<Vec3b>(i,j)[1] == 0 && vir_img.at<Vec3b>(i,j)[2] == 0 )
+            {
+                mm.at<Vec3b>(i,j)[0] = 255;
+                mm.at<Vec3b>(i,j)[1] = 255;
+                mm.at<Vec3b>(i,j)[2] = 255;
+            }
+        }
+    }
+    imshow("vir_img_after",vir_img);
+    imwrite("/Users/sheng/Desktop/vir_img_after.jpg",vir_img);
+    imwrite("/Users/sheng/Desktop/empty_after.jpg",empty_img);
+
+    waitKey(0);
+}
+
+
 
 /**
  *   smooth depth image, you can use a complex algorithm or a simple one like medianBlur.
+ *   这个函数不靠谱，实验结果发现产生了更多的洞！
  *
  */
 
@@ -785,6 +1172,8 @@ void Tool::smoothDepth(ImageFrame& img_frame, int k_size)
 }
 
 
+
+// 这个的前后背景是在一开始时候，根据深度图来做的。
 void Tool::getFrontBackGround(int camid, int startIndex, int endIndex )
 {
 
@@ -802,29 +1191,35 @@ void Tool::getFrontBackGround(int camid, int startIndex, int endIndex )
 
         for(int i = 0; i < edge.rows; ++i)
         {
-            for(int j = 1; j < edge.cols-1; ++j)
+            for(int j = 1; j < edge.cols-2; ++j)
             {
                 if( edge.at<uchar>(i,j) > 250 )
                 {
                     if( getPixelActualDepth(dep.at<Vec3b>(i,j-1)[0]) > getPixelActualDepth(dep.at<Vec3b>(i,j+1)[0]) )
                     {
                         // j-1: background
-                        background.at<Vec3b>(i,j-1)[0] = 0;
-                        background.at<Vec3b>(i,j-1)[1] = 0;
-                        background.at<Vec3b>(i,j-1)[2] = 255;
+                        for(int ch = 1; ch < 2; ++ch)
+                        {
+                        background.at<Vec3b>(i,j-ch)[0] = 0;
+                        background.at<Vec3b>(i,j-ch)[1] = 0;
+                        background.at<Vec3b>(i,j-ch)[2] = 255;
 
-                        frontground.at<Vec3b>(i,j+1)[0] = 255;
-                        frontground.at<Vec3b>(i,j+1)[1] = 0;
-                        frontground.at<Vec3b>(i,j+1)[2] = 0;
+                        frontground.at<Vec3b>(i,j+ch)[0] = 255;
+                        frontground.at<Vec3b>(i,j+ch)[1] = 0;
+                        frontground.at<Vec3b>(i,j+ch)[2] = 0;
+                        }
                     }else{
                         // j+1: background
-                        background.at<Vec3b>(i,j+1)[0] = 0;
-                        background.at<Vec3b>(i,j+1)[1] = 0;
-                        background.at<Vec3b>(i,j+1)[2] = 255;
+                        for(int ch = 1; ch < 2; ++ch)
+                        {
+                        background.at<Vec3b>(i,j+ch)[0] = 0;
+                        background.at<Vec3b>(i,j+ch)[1] = 0;
+                        background.at<Vec3b>(i,j+ch)[2] = 255;
 
-                        frontground.at<Vec3b>(i,j-1)[0] = 255;
-                        frontground.at<Vec3b>(i,j-1)[1] = 0;
-                        frontground.at<Vec3b>(i,j-1)[2] = 0;
+                        frontground.at<Vec3b>(i,j-ch)[0] = 255;
+                        frontground.at<Vec3b>(i,j-ch)[1] = 0;
+                        frontground.at<Vec3b>(i,j-ch)[2] = 0;
+                        }
                     }
 
                     if(  getPixelActualDepth(dep.at<Vec3b>(i,j-1)[0]) + getPixelActualDepth(dep.at<Vec3b>(i,j+1)[0]) > 2*getPixelActualDepth(dep.at<Vec3b>(i,j)[0]) )

@@ -7,6 +7,7 @@ using namespace fvv_tool;
 using namespace Eigen;
 
 // 本文件实验 View Synthesis for advanced 3D Video Systems中，同样也是上交之前文章的分层投影方法。
+// 从投影的结果上看，先删除主投影的背景边缘（深度突变），再用次投影的响应位置的补上，效果能改善。
 
 // 在这个实验中，
 //     object
@@ -67,26 +68,10 @@ int main(int argc, char ** argv)
     tool.projUVtoXYZ(7,0,1);
 
 
-
 //    tool.writePLY("/Users/sheng/Desktop/free-view-point/pl3.ply",tool.cali[3].pl_vec[0]);
 //    tool.writePLY("/Users/sheng/Desktop/free-view-point/pl5.ply",tool.cali[5].pl_vec[0]);
 
     ImageFrame* cali = tool.getCamFrame();
-
-//    double mean_y = 0.0;
-//    for(int y_ind = 0; y_ind < 8; ++y_ind)
-//    {
-//        mean_y += cali[y_ind].pos(1);
-//    }
-//    mean_y = mean_y / 8.0;
-
-//    Matrix3d K_mean;
-//    K_mean = cali[0].K;
-//    for(int k_ind = 1; k_ind < 8; ++k_ind)
-//    {
-//        K_mean = K_mean + cali[k_ind].K;
-//    }
-//    K_mean = K_mean / 8;
 
     // 设定目标位姿
     int list[8] = {0,1,2,3,4,5,6,7};
@@ -126,10 +111,7 @@ int main(int argc, char ** argv)
         om(1) = tmp_om(1);
         om(2) = tmp_om(2);
 
-//        cout << "left_cam_id = " << endl << cali[left_cam_id].pos << endl;
-//        cout << "right_cam_id = " << endl << cali[right_cam_id].pos << endl;
-
-        for(int ind = 1; ind <= 10; ++ind)
+        for(int ind = 0; ind <= 10; ++ind)
         {
 
             Matrix3d now_R;
@@ -181,49 +163,8 @@ int main(int argc, char ** argv)
 
             double d1 =  tool.distance(cali[left_cam_id].pos, pos);
             double d2 =  tool.distance(cali[right_cam_id].pos, pos);
-            double d3 = 0.0;
 
-            double d3_1 = -1.0, d3_2 = -1.0;
-            if( left_cam_id > 0 )
-            {
-                d3_1 = tool.distance(cali[left_cam_id-1].pos, pos);
-            }
-            if( right_cam_id < 7 )
-            {
-                d3_2 = tool.distance(cali[right_cam_id+1].pos, pos);
-            }
-
-            if( d3_1 > 0 && d3_1 < d3_2 )
-            {
-                d3 = d3_1;
-            }
-
-            if( d3_2 > 0 && d3_2 < d3_1 )
-            {
-                d3 = d3_2;
-            }
-
-            if(abs(d3 - d3_1)<1e-4 )
-            {
-                K_mean = ( (d2+d3)/(d1+d2+d3))*cali[left_cam_id].K + ((d1+d3)/(d1+d2+d3))*cali[right_cam_id].K + ((d1+d2)/(d1+d2+d3))*cali[left_cam_id-1].K;
-                K_mean /= 2;
-//                cout << "cali[left_cam_id].K = " << cali[left_cam_id].K<<endl;
-//                cout << "cali[right_cam_id].K = " << cali[right_cam_id].K << endl;
-//                cout << "cali[left_cam_id-1].K = " << cali[left_cam_id-1].K << endl;
-            }else{
-                K_mean =  ( (d2+d3)/(d1+d2+d3))*cali[left_cam_id].K + ((d1+d3)/(d1+d2+d3))*cali[right_cam_id].K + ((d1+d2)/(d1+d2+d3))*cali[right_cam_id+1].K;
-                K_mean /= 2;
-//                cout << "cali[left_cam_id].K = " << cali[left_cam_id].K<<endl;
-//                cout << "cali[right_cam_id].K = " << cali[right_cam_id].K << endl;
-//                cout << "cali[right_cam_id+1].K = " << cali[right_cam_id+1].K << endl;
-            }
-
-            if( right_cam_id == 7 )
-            {
-                K_mean = (d2/(d1+d2))*cali[left_cam_id].K + (d1/(d1+d2))*cali[right_cam_id].K;
-            }
-
-//            K_mean = (d2/(d1+d2))*cali[left_cam_id].K + (d1/(d1+d2))*cali[right_cam_id].K;
+            K_mean = (d2/(d1+d2))*cali[left_cam_id].K + (d1/(d1+d2))*cali[right_cam_id].K;
 
             Matrix4d mp;
             mp.block<3,3>(0,0) = K_mean * now_R;
@@ -236,12 +177,25 @@ int main(int argc, char ** argv)
             ImageFrame target_img;
             target_img.mP = mp;
             target_img.RT = rt;
-            tool.projXYZtoUV(left_cam_id,0,1,target_img);
-            tool.projXYZtoUV(right_cam_id,0,1,target_img);
+            if( d1 < d2 )
+            {
+                tool.projXYZtoUV(left_cam_id,0,1,target_img,true);
+                tool.projXYZtoUV(right_cam_id,0,1,target_img,false);
+            }else{
+                tool.projXYZtoUV(left_cam_id,0,1,target_img, false);
+                tool.projXYZtoUV(right_cam_id,0,1,target_img, true);
+            }
 
-            tool.smoothDepth(target_img,3); // 虽然在平滑之后的深度没有了部分突变，但是在原图投影过来的位置，依然是存在黑点，因此融合的结果中依然有黑点存在，因此需要使用反向warp
+            // 这个里面只对left做了处理
+            tool.getProjBackground(target_img,d1,d2);
 
-            tool.rendering(target_img,d1,d2);
+// 这个函数不靠谱，实验结果发现产生了更多的洞！
+//            tool.smoothDepth(target_img,3);
+//            tool.rendering_backward(target_img,d1,d2);
+            tool.rendering_forward(target_img,d1,d2);
+
+            // 对rendering之后的结果，进行黑洞的补全
+            tool.repair(target_img);
 
             stringstream ss;
             ss << "/Users/sheng/Desktop/img/";
@@ -254,6 +208,30 @@ int main(int argc, char ** argv)
             string ss_str;
             ss >> ss_str;
             imwrite(ss_str, target_img.vir_img[0]);
+
+            ss.clear();
+            ss_str.clear();
+            ss << "/Users/sheng/Desktop/left_pro/";
+            ss << left_cam_id;
+            ss << "_";
+            ss << right_cam_id;
+            ss << "_";
+            ss << ind;
+            ss << "_left.jpg";
+            ss >> ss_str;
+            imwrite(ss_str, target_img.rgb_vec[0]);
+
+            ss.clear();
+            ss_str.clear();
+            ss << "/Users/sheng/Desktop/right_pro/";
+            ss << left_cam_id;
+            ss << "_";
+            ss << right_cam_id;
+            ss << "_";
+            ss << ind;
+            ss << "_right.jpg";
+            ss >> ss_str;
+            imwrite(ss_str, target_img.rgb_vec[1]);
 
             ss_str.clear();
             ss.clear();

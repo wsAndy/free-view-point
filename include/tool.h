@@ -24,11 +24,11 @@ using namespace Eigen;
 // and it might not work well for video stream since there is no accelerate or multi-thread.
 namespace fvv_tool
 {
-enum main_front_back{ mainground = 1, frontground, background };
+//enum main_front_back{ mainground = 1, frontground, background };
     struct point{
         int r,g,b;
         double x,y,z;
-        main_front_back address;
+//        main_front_back address;
 
     };
     struct pointcloud{
@@ -66,7 +66,9 @@ enum main_front_back{ mainground = 1, frontground, background };
         vector< Mat> vir_img;
 
         vector< Mat> frontground;
-        vector< Mat> background;        
+        vector< Mat> background;
+
+//        vector<Mat> result_edge_mask;
 
 
     };
@@ -99,12 +101,19 @@ enum main_front_back{ mainground = 1, frontground, background };
         // convert depth image's pixel value to an actual one.
         double getPixelActualDepth(unsigned char d);
 
+        void getProjBackground(ImageFrame& img_frame, double d1, double d2);
+
         // convert depth to image pixel.
         double getPixelDepth(double dw);
 
+        // 修补最终结果
+        void repair(ImageFrame& img_frame);
+
         // rendering to novel viewpoint.
-        void rendering(ImageFrame& img_frame, double d1, double d2);
-        void renderingTest(ImageFrame& img_frame, double d1, double d2);
+        // 这个下面使用了反向投影，发现效果不好！
+        void rendering_backward(ImageFrame& img_frame, double d1, double d2);
+        // 这个下面使用了正向投影，发现效果好！
+        void rendering_forward(ImageFrame& img_frame, double d1, double d2);
 
         // get frontground and background
         void getFrontBackGround(int camid, int startIndex = 0, int endIndex = 1 );
@@ -155,7 +164,7 @@ enum main_front_back{ mainground = 1, frontground, background };
         // startId: project which image from sequence? from 0 to  rgb_vec.size()-1
         // endId:   project which image from sequence? from 0 to  rgb_vec.size()-1
         void projUVtoXYZ(int id ,int startInd, int endInd);
-        void projXYZtoUV(int cam_id, int startInd, int endInd, ImageFrame& tar_img);
+        void projXYZtoUV(int cam_id, int startInd, int endInd, ImageFrame& tar_img, bool del_back = false);
         void writePLY(string name, pointcloud& pl);
 
 
