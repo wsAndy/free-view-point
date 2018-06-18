@@ -193,9 +193,12 @@ int main(int argc, char ** argv)
 //            tool.smoothDepth(target_img,3);
 //            tool.rendering_backward(target_img,d1,d2);
             tool.rendering_forward(target_img,d1,d2);
+            // 融合之后的结果中，由于在一开始getProjBackground中删除部分点会导致一些凸出的尖峰状干扰，建议在周围做局部的均值操作（在最外围做区域的平均）
+            // 但是getProjBackground里面那个back通过target_img拿出来总是会出错，这个是一个bug
 
             // 对rendering之后的结果，进行黑洞的补全
             tool.repair(target_img);
+
 
             stringstream ss;
             ss << "/Users/sheng/Desktop/img/";

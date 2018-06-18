@@ -109,6 +109,8 @@ namespace fvv_tool
         // 修补最终结果
         void repair(ImageFrame& img_frame);
 
+        void pixelMedianFilter(Mat& img, Mat& mask, int row, int col, int k_size);
+
         // rendering to novel viewpoint.
         // 这个下面使用了反向投影，发现效果不好！
         void rendering_backward(ImageFrame& img_frame, double d1, double d2);

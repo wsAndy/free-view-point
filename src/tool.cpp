@@ -636,6 +636,51 @@ void Tool::findNearestCamId(Matrix4d& rt, int num, int& m1_, int& m2_)
 
 }
 
+void Tool::pixelMedianFilter(Mat &img, Mat& mask, int row, int col, int k_size)
+{
+
+
+    // 开始做当前中心的中值滤波
+    for(int ch = 0; ch < 3; ++ch)
+    {
+        vector<uchar> value;
+
+        for(int ki = row-k_size; ki <= row+k_size; ++ki)
+        {
+            for(int kj = col-k_size; kj <= col+k_size; ++kj)
+            {
+                if( ki == 0 && kj == 0 )
+                {
+                    continue;
+                }
+                if( mask.at<Vec3b>(ki,kj)[0] > 250 && mask.at<Vec3b>(ki,kj)[1] > 250 && mask.at<Vec3b>(ki,kj)[2] > 250 )
+                {
+                    continue;
+                }
+                value.push_back(img.at<Vec3b>(ki,kj)[ch]);
+            }
+        }
+
+        // 直接输出的值是ascii码字符
+        if( value.size() < ( (2*k_size+1)*(2*k_size+1)-1 )/2  )
+        {
+            // 数目没有超过周围一半，则跳过
+            continue;
+        }
+
+        // 得到value为周围 (2*k_size+1)^2-1 个像素的值，且没有空缺的位置的中值
+        sort( value.begin(), value.end() );
+        if( value.size() % 2 == 0 )
+        {
+            img.at<Vec3b>(row,col)[ch] = (round( value[value.size()/2]+value[value.size()/2-1])/2);
+        }else{
+            img.at<Vec3b>(row,col)[ch] = (value[ value.size()/2 ]);
+        }
+
+    }
+
+}
+
 
 // 将投影在目标位置的那个图像，提取边缘，做处理
 // 下面将待处理的那个图像称为left_img,left_dep，实际是根据d的距离来
@@ -886,6 +931,8 @@ void Tool::getProjBackground(ImageFrame &img_frame, double d1, double d2)
 
     }
 
+
+
     if( d1 > d2 )
     {
         img_frame.rgb_vec[1] = left_img;
@@ -1040,7 +1087,7 @@ void Tool::repair(ImageFrame &img_frame)
     {
         for(int j = 0; j < vir_img.cols; ++j)
         {
-            if( vir_img.at<Vec3b>(i,j)[0] == 0 && vir_img.at<Vec3b>(i,j)[1] == 0 && vir_img.at<Vec3b>(i,j)[2] == 0 )
+            if( vir_img.at<Vec3b>(i,j)[0] < 11 && vir_img.at<Vec3b>(i,j)[1] < 11 && vir_img.at<Vec3b>(i,j)[2] < 11 )
             {
                 empty_img.at<Vec3b>(i,j)[0] = 255;
                 empty_img.at<Vec3b>(i,j)[1] = 255;
@@ -1050,82 +1097,72 @@ void Tool::repair(ImageFrame &img_frame)
     }
 
 
-    imshow("vir_img_before",vir_img);
-    imwrite("/Users/sheng/Desktop/vir_img_before.jpg",vir_img);
-    imwrite("/Users/sheng/Desktop/empty_before.jpg",empty_img);
+//    imshow("vir_img_before",vir_img);
+//    imwrite("/Users/sheng/Desktop/vir_img_before.jpg",vir_img);
+//    imwrite("/Users/sheng/Desktop/empty_before.jpg",empty_img);
 
-    int k_size = 1;
+    int k_size = 2;
 
     for(int i = k_size; i < empty_img.rows - k_size; ++i)
     {
         for(int j = k_size; j < empty_img.cols - k_size; ++j)
         {
-            if( empty_img.at<Vec3b>(i,j)[0] > 250 )
+            if( empty_img.at<Vec3b>(i,j)[0] > 250 && empty_img.at<Vec3b>(i,j)[1] > 250 &&empty_img.at<Vec3b>(i,j)[2] > 250)
             {
-                // 开始做当前中心的中值滤波
-                for(int ch = 0; ch < 3; ++ch)
-                {
-                    vector<uchar> value;
-
-                    for(int ki = -1*k_size; ki <= k_size; ++ki)
-                    {
-                        for(int kj = -1 * k_size; kj <= k_size; ++kj)
-                        {
-                            if( ki == 0 && kj == 0 )
-                            {
-                                continue;
-                            }
-                            if( empty_img.at<Vec3b>(ki,kj)[0] > 250  )
-                            {
-                                continue;
-                            }
-                            value.push_back(vir_img.at<Vec3b>(ki,kj)[ch]);
-                        }
-                    }
-
-                    // 直接输出的值是ascii码
-                    if( value.size() < ( (2*k_size+1)*(2*k_size+1)-1 )/2  )
-                    {
-                        // 数目没有超过周围一半，则跳过
-                        continue;
-                    }
-
-                    // 得到value为周围 (2*k_size+1)^2-1 个像素的值，且没有空缺的位置的中值
-                    sort( value.begin(), value.end() );
-                    if( value.size() % 2 == 0 )
-                    {
-                        vir_img.at<Vec3b>(i,j)[ch] = round((value[value.size()/2]+value[value.size()/2-1])/2);
-                    }else{
-                        vir_img.at<Vec3b>(i,j)[ch] = value[ value.size()/2 ];
-                    }
-
-                }
-
+                pixelMedianFilter(vir_img, empty_img, i,j,k_size);
             }
         }
     }
-    从结果上看，根本就没有执行中值的操作，前后没变！！！！！！
 
+    // vir_img目前已经把一开始的小洞补上了
+    // 现在的vir_img中小洞少了很多，留下一些较大块以及由之前大块被补后留下的小洞
 
-
-    Mat mm = Mat::zeros(vir_img.rows, vir_img.cols, CV_8UC3);
+    // 先做一次当前空缺的膨胀-腐蚀（闭运算）
+    Mat empty_left = Mat::zeros(vir_img.rows, vir_img.cols, CV_8UC3);
     for(int i = 0; i < vir_img.rows; ++i)
     {
         for(int j = 0; j < vir_img.cols; ++j)
         {
-            if( vir_img.at<Vec3b>(i,j)[0] == 0 && vir_img.at<Vec3b>(i,j)[1] == 0 && vir_img.at<Vec3b>(i,j)[2] == 0 )
+            if( vir_img.at<Vec3b>(i,j)[0] < 11 && vir_img.at<Vec3b>(i,j)[1] < 11 && vir_img.at<Vec3b>(i,j)[2] < 11 )
             {
-                mm.at<Vec3b>(i,j)[0] = 255;
-                mm.at<Vec3b>(i,j)[1] = 255;
-                mm.at<Vec3b>(i,j)[2] = 255;
+                empty_left.at<Vec3b>(i,j)[0] = 255;
+                empty_left.at<Vec3b>(i,j)[1] = 255;
+                empty_left.at<Vec3b>(i,j)[2] = 255;
             }
         }
     }
-    imshow("vir_img_after",vir_img);
-    imwrite("/Users/sheng/Desktop/vir_img_after.jpg",vir_img);
-    imwrite("/Users/sheng/Desktop/empty_after.jpg",empty_img);
 
-    waitKey(0);
+//    imshow("empty2",empty_left);
+
+    Mat element = getStructuringElement(MORPH_RECT, Size(5,5));
+    morphologyEx(empty_left,empty_left,MORPH_CLOSE, element);
+
+//    imshow("empty_afterclose",empty_left);
+
+    Mat empty_one;
+    cvtColor(empty_left,empty_one,CV_BGR2GRAY);
+    threshold(empty_one,empty_one,90,255,CV_THRESH_BINARY);
+
+    // 这种空缺的洞，一般是由于左右投影的两张都没有看到对应位置，或者是左右原图深度缺失，而且一般这种洞位于前后景交界处
+
+    // 这边直接用cv的inpaint函数
+    Mat inpainted;
+    inpaint(vir_img, empty_one, inpainted, 3, CV_INPAINT_TELEA);
+
+//    imshow("inpainted",inpainted);
+//    waitKey(0);
+
+
+    medianBlur(inpainted, inpainted, 3);
+
+    img_frame.vir_img[0] = inpainted;
+
+
+//    imshow("vir_img_after",vir_img);
+//    imwrite("/Users/sheng/Desktop/vir_img_after.jpg",vir_img);
+//    imwrite("/Users/sheng/Desktop/empty_after.jpg",mm);
+
+//    waitKey(0);
 }
 
 
